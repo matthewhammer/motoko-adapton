@@ -1,4 +1,4 @@
-import Render "../render/Render";
+import Render "mo:redraw/Render";
 import T "types";
 
 module {
