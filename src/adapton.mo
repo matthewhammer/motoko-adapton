@@ -74,6 +74,12 @@ import P "mo:stdlib/prelude";
 import T "types";
 
 module {
+
+public type Eval = T.Eval;
+
+public class Engine(T.Eval
+
+
 public type Val = T.Eval.Val;
 public type Env = T.Eval.Env;
 public type Exp = T.Eval.Exp;
