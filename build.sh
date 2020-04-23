@@ -1,1 +1,1 @@
-moc `./vessel sources` -c src/test.mo
+moc `./vessel sources` --package adapton src -r test/test.mo
