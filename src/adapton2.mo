@@ -71,21 +71,99 @@ import L "mo:base/list";
 import R "mo:base/result";
 import P "mo:base/prelude";
 
-import T "types";
+import E "evalType";
 
 module {
 
-public class AdaptonEngine<_Name, _Val, _Error, _Env, _Exp>(Eval:T.Eval<_Name, _Val, _Error, _Env, _Exp>) {
+  // morally, there are 5 user-defined types over which this module is
+  // parameterized: Env, Exp, Val, Error and Name.
+  // Some types defined below require all five of these abstract parameters.  Some require fewer.
 
-  // Compiler says: type error, type definition Val = _Val references type parameter(s) _Val from an outer scope
-  type Val = _Val;
-  public type Env = _Env;
-  public type Exp = _Exp;
-  public type Error = _Error;
-  public type Name = _Name;
-  public type Result = _Result;
+  type Closure<Env, Exp> = {
+    env: Env;
+    exp: Exp;
+  };
+
+  public type Store<Name, Val, Error, Env, Exp> =
+    H.HashMap<Name, Node<Name, Val, Error, Env, Exp>>;
+
+  public type Node<Name, Val, Error, Env, Exp> = {
+    #ref:Ref<Name, Val, Error, Env, Exp>;
+    #thunk:Thunk<Name, Val, Error, Env, Exp>;
+  };
+
+  public type Stack<Name> = L.List<Name>;
+  public type EdgeBuf<Name, Val, Error, Env, Exp> = Buf.Buf<Edge<Name, Val, Error, Env, Exp>>;
+
+  public type Ref<Name, Val, Error, Env, Exp> = {
+    content: Val;
+    incoming: EdgeBuf<Name, Val, Error, Env, Exp>;
+  };
+
+  public type Thunk<Name, Val, Error, Env, Exp> = {
+    closure: Closure<Env, Exp>;
+    result: R.Result<Val, Error>;
+    outgoing: [Edge<Name, Val, Error, Env, Exp>];
+    incoming: EdgeBuf<Name, Val, Error, Env, Exp>;
+  };
+
+  public type Edge<Name, Val, Error, Env, Exp> = {
+    dependent: Name;
+    dependency: Name;
+    checkpoint: Action<Val, Error, Env, Exp>;
+    var dirtyFlag: Bool
+  };
+
+  public type Action<Val, Error, Env, Exp> = {
+    #put:Val;
+    #putThunk:Closure<Env, Exp>;
+    #get:R.Result<Val, Error>;
+  };
+
+  public type PutError = (); // to do
+  public type GetError = (); // to do
+
+  // Logs are tree-structured.
+  public type LogEvent<Name, Val, Error, Env, Exp> = {
+    #put:      (Name, Val, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #putThunk: (Name, Closure<Env, Exp>, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #get:      (Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #dirtyIncomingTo:(Name, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #dirtyEdgeFrom:(Name, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #cleanEdgeTo:(Name, Bool, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #cleanThunk:(Name, Bool, [LogEvent<Name, Val, Error, Env, Exp>]);
+    #evalThunk:(Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Env, Exp>])
+  };
+  public type LogEventTag<Name, Val, Error, Env, Exp> = {
+    #put:      (Name, Val);
+    #putThunk: (Name, Closure<Env, Exp>);
+    #get:      (Name, R.Result<Val, Error>);
+    #dirtyIncomingTo:Name;
+    #dirtyEdgeFrom: Name;
+    #cleanEdgeTo:(Name, Bool);
+    #cleanThunk:(Name, Bool);
+    #evalThunk:(Name, R.Result<Val, Error>);
+  };
+  public type LogEventBuf<Name, Val, Error, Env, Exp> = Buf.Buf<LogEvent<Name, Val, Error, Env, Exp>>;
+  public type LogBufStack<Name, Val, Error, Env, Exp> = L.List<LogEventBuf<Name, Val, Error, Env, Exp>>;
 
 
-};
+  public type Context<Name, Val, Error, Env, Exp> = {
+    var agent: {#editor; #archivist};
+    var edges: EdgeBuf<Name, Val, Error, Env, Exp>;
+    var stack: Stack<Name>;
+    var store: Store<Name, Val, Error, Env, Exp>;
+    // logging for debugging; not essential for other state:
+    var logFlag: Bool;
+    var logBuf: LogEventBuf<Name, Val, Error, Env, Exp>;
+    var logStack: LogBufStack<Name, Val, Error, Env, Exp>;
+    var eval: E.Eval<Name, Val, Error, Env, Exp>;
+  };
+
+  // class accepts the associated operations over the 5 user-defined type params
+  public class Engine<_Name, _Val, _Error, _Env, _Exp>(Eval:E.Eval<_Name, _Val, _Error, _Env, _Exp>) {
+    // to do: define the public interface of Adapton using Eval to implement expression evaluation ...
+    // ... by following original cleanSheets implementation (mostly copying it).
+  };
 
 }

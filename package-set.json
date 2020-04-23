@@ -1,32 +1,32 @@
 [
   {
-    "name": "stdlib",
+    "name": "base",
     "repo": "git@github.com:dfinity-lab/motoko-base.git",
     "version": "master",
     "dependencies": []
   },
   {
-    "name": "stdlib-local",
+    "name": "base-local",
     "repo": "/Users/matthew/dfn/motoko-base",
     "version": "master",
-    "dependencies": []
+    "dependencies": ["base"]
   },
   {
     "name": "stand",
     "repo": "git@github.com:matthewhammer/motoko-stand.git",
     "version": "master",
-    "dependencies": ["stdlib"]
+    "dependencies": ["base"]
   },
   {
     "name": "stand-local",
     "repo": "/Users/matthew/dfn/motoko-stand",
     "version": "master",
-    "dependencies": ["stdlib"]
+    "dependencies": ["base"]
   },
   {
     "name": "redraw",
     "repo": "/Users/matthew/dfn/motoko-redraw",
     "version": "master",
-    "dependencies": ["stdlib", "stand"]
+    "dependencies": ["base", "stand"]
   }
 ]
