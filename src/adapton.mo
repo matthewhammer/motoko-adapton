@@ -3,15 +3,24 @@
 This module defines a general-purpose cache and dependence graph
 system.  See `EvalType.EvalOps` for details about its parameters.
 
-## Public API:
+The client of this API chooses 4 representations:
 
-The public API of the class below has several operations, but the core API are these three:
+ - `Name` -- the identity of cached information; must be unique.
+ - `Val` -- the type of data stored in Named Refs, and produced by successfully-evaluated Closures.
+ - `Error` -- the type of data produced when evaluation errors occur. Misusing the cache can also produce Errors.
+ - `Closure` -- the representation of suspended computations stored in Named Thunks.
+
+## Cache operations
+
+Using the types chosen above, the Engine exposes three important cache operations:
 
  - `put` a Value into a Ref, located at a Name.
 
- - `putThunk` a suspended Exp into a Thunk, located at a Name.
+ - `putThunk` a suspended Closure into a Thunk, located at a Name.
 
  - `get` the Value of a Ref, or the result of evaluating a Thunk, by its Name.
+
+## Incremental caching and re-computation is automatic
 
 Behind the scenes, Adapton caches the results and dependencies of
 user-defined thunks as they evaluate.
@@ -96,48 +105,43 @@ import E "EvalType";
 
 module {
 
-  // morally, there are 5 user-defined types over which this module is
-  // parameterized: Env, Exp, Val, Error and Name.
-  // Some types defined below require all five of these abstract parameters.  Some require fewer.
+  // morally, there are 4 user-defined types over which this module is
+  // parameterized: Name, Val, Error and Closure.
+  // Some types defined below require all four of these abstract parameters.  Some require fewer.
 
-  type Closure<Env, Exp> = {
-    env: Env;
-    exp: Exp;
-  };
+  public type Store<Name, Val, Error, Closure> =
+    H.HashMap<Name, Node<Name, Val, Error, Closure>>;
 
-  public type Store<Name, Val, Error, Env, Exp> =
-    H.HashMap<Name, Node<Name, Val, Error, Env, Exp>>;
-
-  public type Node<Name, Val, Error, Env, Exp> = {
-    #ref:Ref<Name, Val, Error, Env, Exp>;
-    #thunk:Thunk<Name, Val, Error, Env, Exp>;
+  public type Node<Name, Val, Error, Closure> = {
+    #ref:Ref<Name, Val, Error, Closure>;
+    #thunk:Thunk<Name, Val, Error, Closure>;
   };
 
   public type Stack<Name> = L.List<Name>;
-  public type EdgeBuf<Name, Val, Error, Env, Exp> = Buf.Buf<Edge<Name, Val, Error, Env, Exp>>;
+  public type EdgeBuf<Name, Val, Error, Closure> = Buf.Buf<Edge<Name, Val, Error, Closure>>;
 
-  public type Ref<Name, Val, Error, Env, Exp> = {
+  public type Ref<Name, Val, Error, Closure> = {
     content: Val;
-    incoming: EdgeBuf<Name, Val, Error, Env, Exp>;
+    incoming: EdgeBuf<Name, Val, Error, Closure>;
   };
 
-  public type Thunk<Name, Val, Error, Env, Exp> = {
-    closure: Closure<Env, Exp>;
+  public type Thunk<Name, Val, Error, Closure> = {
+    closure: Closure;
     result: ?R.Result<Val, Error>;
-    outgoing: [Edge<Name, Val, Error, Env, Exp>];
-    incoming: EdgeBuf<Name, Val, Error, Env, Exp>;
+    outgoing: [Edge<Name, Val, Error, Closure>];
+    incoming: EdgeBuf<Name, Val, Error, Closure>;
   };
 
-  public type Edge<Name, Val, Error, Env, Exp> = {
+  public type Edge<Name, Val, Error, Closure> = {
     dependent: Name;
     dependency: Name;
-    checkpoint: Action<Val, Error, Env, Exp>;
+    checkpoint: Action<Val, Error, Closure>;
     var dirtyFlag: Bool
   };
 
-  public type Action<Val, Error, Env, Exp> = {
+  public type Action<Val, Error, Closure> = {
     #put:Val;
-    #putThunk:Closure<Env, Exp>;
+    #putThunk:Closure;
     #get:R.Result<Val, Error>;
   };
 
@@ -145,19 +149,19 @@ module {
   public type GetError = (); // to do
 
   // Logs are tree-structured.
-  public type LogEvent<Name, Val, Error, Env, Exp> = {
-    #put:      (Name, Val, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #putThunk: (Name, Closure<Env, Exp>, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #get:      (Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #dirtyIncomingTo:(Name, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #dirtyEdgeFrom:(Name, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #cleanEdgeTo:(Name, Bool, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #cleanThunk:(Name, Bool, [LogEvent<Name, Val, Error, Env, Exp>]);
-    #evalThunk:(Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Env, Exp>])
+  public type LogEvent<Name, Val, Error, Closure> = {
+    #put:      (Name, Val, [LogEvent<Name, Val, Error, Closure>]);
+    #putThunk: (Name, Closure, [LogEvent<Name, Val, Error, Closure>]);
+    #get:      (Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Closure>]);
+    #dirtyIncomingTo:(Name, [LogEvent<Name, Val, Error, Closure>]);
+    #dirtyEdgeFrom:(Name, [LogEvent<Name, Val, Error, Closure>]);
+    #cleanEdgeTo:(Name, Bool, [LogEvent<Name, Val, Error, Closure>]);
+    #cleanThunk:(Name, Bool, [LogEvent<Name, Val, Error, Closure>]);
+    #evalThunk:(Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Closure>])
   };
-  public type LogEventTag<Name, Val, Error, Env, Exp> = {
+  public type LogEventTag<Name, Val, Error, Closure> = {
     #put:      (Name, Val);
-    #putThunk: (Name, Closure<Env, Exp>);
+    #putThunk: (Name, Closure);
     #get:      (Name, R.Result<Val, Error>);
     #dirtyIncomingTo:Name;
     #dirtyEdgeFrom: Name;
@@ -165,53 +169,53 @@ module {
     #cleanThunk:(Name, Bool);
     #evalThunk:(Name, R.Result<Val, Error>);
   };
-  public type LogEventBuf<Name, Val, Error, Env, Exp> = Buf.Buf<LogEvent<Name, Val, Error, Env, Exp>>;
-  public type LogBufStack<Name, Val, Error, Env, Exp> = L.List<LogEventBuf<Name, Val, Error, Env, Exp>>;
+  public type LogEventBuf<Name, Val, Error, Closure> = Buf.Buf<LogEvent<Name, Val, Error, Closure>>;
+  public type LogBufStack<Name, Val, Error, Closure> = L.List<LogEventBuf<Name, Val, Error, Closure>>;
 
 
-  public type Context<Name, Val, Error, Env, Exp> = {
+  public type Context<Name, Val, Error, Closure> = {
     var agent: {#editor; #archivist};
-    var edges: EdgeBuf<Name, Val, Error, Env, Exp>;
+    var edges: EdgeBuf<Name, Val, Error, Closure>;
     var stack: Stack<Name>;
-    var store: Store<Name, Val, Error, Env, Exp>;
+    var store: Store<Name, Val, Error, Closure>;
     // logging for debugging; not essential for other state:
     var logFlag: Bool;
-    var logBuf: LogEventBuf<Name, Val, Error, Env, Exp>;
-    var logStack: LogBufStack<Name, Val, Error, Env, Exp>;
-    evalOps: E.EvalOps<Name, Val, Error, Env, Exp>;
+    var logBuf: LogEventBuf<Name, Val, Error, Closure>;
+    var logStack: LogBufStack<Name, Val, Error, Closure>;
+    evalOps: E.EvalOps<Name, Val, Error, Closure>;
   };
 
-  // class accepts the associated operations over the 5 user-defined type params
-  public class Engine<Name, Val, Error, Env, Exp>(evalOps:E.EvalOps<Name, Val, Error, Env, Exp>, _logFlag:Bool) {
+  // class accepts the associated operations over the 4 user-defined type params
+  public class Engine<Name, Val, Error, Closure>(evalOps:E.EvalOps<Name, Val, Error, Closure>, _logFlag:Bool) {
 
     /* Initialize */
 
-    public func init(_logFlag:Bool) : Context<Name, Val, Error, Env, Exp> {
+    public func init(_logFlag:Bool) : Context<Name, Val, Error, Closure> {
       let _evalOps = evalOps;
       {
         var agent = (#editor : {#editor; #archivist});
 
-        var edges : EdgeBuf<Name, Val, Error, Env, Exp> =
-          Buf.Buf<Edge<Name, Val, Error, Env, Exp>>(0);
+        var edges : EdgeBuf<Name, Val, Error, Closure> =
+          Buf.Buf<Edge<Name, Val, Error, Closure>>(0);
 
         var stack : Stack<Name> = null;
 
-        var store : Store<Name, Val, Error, Env, Exp> =
-          H.HashMap<Name, Node<Name, Val, Error, Env, Exp>>(03, _evalOps.nameEq, _evalOps.nameHash);
+        var store : Store<Name, Val, Error, Closure> =
+          H.HashMap<Name, Node<Name, Val, Error, Closure>>(03, _evalOps.nameEq, _evalOps.nameHash);
 
         var logFlag = _logFlag;
 
-        var logBuf : LogEventBuf<Name, Val, Error, Env, Exp> =
-          Buf.Buf<LogEvent<Name, Val, Error, Env, Exp>>(0);
+        var logBuf : LogEventBuf<Name, Val, Error, Closure> =
+          Buf.Buf<LogEvent<Name, Val, Error, Closure>>(0);
 
-        var logStack : LogBufStack<Name, Val, Error, Env, Exp> = null;
+        var logStack : LogBufStack<Name, Val, Error, Closure> = null;
         evalOps = _evalOps;
       }
     };
 
     /* Special context for public api */
 
-    var context : Context<Name, Val, Error, Env, Exp> = init(_logFlag);
+    var context : Context<Name, Val, Error, Closure> = init(_logFlag);
 
     /* Main API: put, putThunk, and get */
 
@@ -219,20 +223,15 @@ module {
       : R.Result<Name, PutError>
       = contextPut(context, n, val);
 
-    public func putThunk(n:Name, _env:Env, _exp:Exp)
+    public func putThunk(n:Name, clos:Closure)
       : R.Result<Name, PutError>
-      = contextPutThunk(context, n, {env=_env; exp=_exp});
+      = contextPutThunk(context, n, clos);
 
     public func get(n:Name)
       : R.Result<{#ok:Val; #err:Error}, GetError>
       = contextGet(context, n);
 
     /* Public utilities */
-
-    public func closureEq(c1:Closure<Env, Exp>, c2:Closure<Env, Exp>) : Bool {
-      evalOps.envEq(c1.env, c2.env)
-      and evalOps.expEq(c1.exp, c2.exp)
-    };
 
     public func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {
@@ -242,7 +241,7 @@ module {
       };
     };
 
-    public func logEventsEq (e1:[LogEvent<Name, Val, Error, Env, Exp>], e2:[LogEvent<Name, Val, Error, Env, Exp>]) : Bool {
+    public func logEventsEq (e1:[LogEvent<Name, Val, Error, Closure>], e2:[LogEvent<Name, Val, Error, Closure>]) : Bool {
       if (e1.len() == e2.len()) {
         for (i in e1.keys()) {
           if (logEventEq(e1[i], e2[i])) {
@@ -255,7 +254,7 @@ module {
       } else { false }
     };
 
-    public func logEventEq (e1:LogEvent<Name, Val, Error, Env, Exp>, e2:LogEvent<Name, Val, Error, Env, Exp>) : Bool {
+    public func logEventEq (e1:LogEvent<Name, Val, Error, Closure>, e2:LogEvent<Name, Val, Error, Closure>) : Bool {
       switch (e1, e2) {
       case (#put(n1, v1, es1), #put(n2, v2, es2)) {
              evalOps.nameEq(n1, n2) and evalOps.valEq(v1, v2) and logEventsEq(es1, es2)
@@ -290,14 +289,14 @@ module {
 
     // note: the log is just for output, for human-based debugging;
     // it is not to used by evaluation logic, nor by our algorithms here.
-    public func getLogEvents() : [LogEvent<Name, Val, Error, Env, Exp>] {
+    public func getLogEvents() : [LogEvent<Name, Val, Error, Closure>] {
       switch (context.agent) {
       case (#editor) { context.logBuf.toArray() };
       case (#archivist) { assert false ; loop { } };
       }
     };
 
-    public func getLogEventLast() : ?LogEvent<Name, Val, Error, Env, Exp> {
+    public func getLogEventLast() : ?LogEvent<Name, Val, Error, Closure> {
       if (context.logBuf.len() > 0) {
         ?context.logBuf.get(context.logBuf.len())
       } else {
@@ -306,7 +305,7 @@ module {
     };
 
     // assert last log event
-    public func assertLogEventLast(expected:LogEvent<Name, Val, Error, Env, Exp>) {
+    public func assertLogEventLast(expected:LogEvent<Name, Val, Error, Closure>) {
       let logLen = context.logBuf.len();
       if (logLen > 0) {
         let actual = context.logBuf.get(logLen - 1);
@@ -322,11 +321,11 @@ module {
      We do not /need/ these, but they demonstrate another design.
      */
 
-    public func contextPut(c:Context<Name, Val, Error, Env, Exp>, name:Name, val:Val)
+    public func contextPut(c:Context<Name, Val, Error, Closure>, name:Name, val:Val)
       : R.Result<Name, PutError>
     {
       beginLogEvent(c);
-      let newRefNode : Ref<Name, Val, Error, Env, Exp> = {
+      let newRefNode : Ref<Name, Val, Error, Closure> = {
         incoming=newEdgeBuf();
         content=val;
       };
@@ -346,11 +345,11 @@ module {
       #ok(name)
     };
 
-    public func contextPutThunk(c:Context<Name, Val, Error, Env, Exp>, name:Name, cl:Closure<Env, Exp>)
+    public func contextPutThunk(c:Context<Name, Val, Error, Closure>, name:Name, cl:Closure)
       : R.Result<Name, PutError>
     {
       beginLogEvent(c);
-      let newThunkNode : Thunk<Name, Val, Error, Env, Exp> = {
+      let newThunkNode : Thunk<Name, Val, Error, Closure> = {
         incoming=newEdgeBuf();
         outgoing=[];
         result=null;
@@ -359,7 +358,7 @@ module {
       switch (c.store.swap(name, #thunk(newThunkNode))) {
       case null { /* no prior node of this name */ };
       case (?#thunk(oldThunk)) {
-             if (closureEq(oldThunk.closure, cl)) {
+             if (evalOps.closureEq(oldThunk.closure, cl)) {
                // matching closures ==> no dirtying.
              } else {
                dirtyThunk(c, name, oldThunk)
@@ -372,7 +371,7 @@ module {
       #ok(name)
     };
 
-    public func contextGet(c:Context<Name, Val, Error, Env, Exp>, name:Name) : R.Result<{#ok:Val;#err:Error}, GetError> {
+    public func contextGet(c:Context<Name, Val, Error, Closure>, name:Name) : R.Result<{#ok:Val;#err:Error}, GetError> {
       beginLogEvent(c);
       switch (c.store.get(name)) {
       case null { #err(()) /* error: dangling/forged name posing as live node id. */ };
@@ -417,7 +416,7 @@ module {
 
     /* Private implementation details --- Change propagation (aka, "dirtying and cleaning") algorithms below.  */
 
-    func newEdge(source:Name, target:Name, action:Action<Val, Error, Env, Exp>) : Edge<Name, Val, Error, Env, Exp> {
+    func newEdge(source:Name, target:Name, action:Action<Val, Error, Closure>) : Edge<Name, Val, Error, Closure> {
       { dependent=source;
         dependency=target;
         checkpoint=action;
@@ -425,14 +424,14 @@ module {
       }
     };
 
-    func incomingEdgeBuf(n:Node<Name, Val, Error, Env, Exp>) : EdgeBuf<Name, Val, Error, Env, Exp> {
+    func incomingEdgeBuf(n:Node<Name, Val, Error, Closure>) : EdgeBuf<Name, Val, Error, Closure> {
       switch n {
       case (#ref(n)) { n.incoming };
       case (#thunk(t)) { t.incoming };
       }
     };
 
-    func addBackEdge(c:Context<Name, Val, Error, Env, Exp>, edge:Edge<Name, Val, Error, Env, Exp>) {
+    func addBackEdge(c:Context<Name, Val, Error, Closure>, edge:Edge<Name, Val, Error, Closure>) {
       switch (c.store.get(edge.dependency)) {
       case null { P.unreachable() };
       case (?targetNode) {
@@ -455,12 +454,12 @@ module {
       }
     };
 
-    func remBackEdge(c:Context<Name, Val, Error, Env, Exp>, edge:Edge<Name, Val, Error, Env, Exp>) {
+    func remBackEdge(c:Context<Name, Val, Error, Closure>, edge:Edge<Name, Val, Error, Closure>) {
       switch (c.store.get(edge.dependency)) {
       case (?node) {
              let nodeIncoming = incomingEdgeBuf(node);
-             let newIncoming : EdgeBuf<Name, Val, Error, Env, Exp> =
-               Buf.Buf<Edge<Name, Val, Error, Env, Exp>>(0);
+             let newIncoming : EdgeBuf<Name, Val, Error, Closure> =
+               Buf.Buf<Edge<Name, Val, Error, Closure>>(0);
              for (incomingEdge in nodeIncoming.iter()) {
                if (evalOps.nameEq(edge.dependent,
                                  incomingEdge.dependent)) {
@@ -477,19 +476,19 @@ module {
       }
     };
 
-    func addBackEdges(c:Context<Name, Val, Error, Env, Exp>, edges:[Edge<Name, Val, Error, Env, Exp>]) {
+    func addBackEdges(c:Context<Name, Val, Error, Closure>, edges:[Edge<Name, Val, Error, Closure>]) {
       for (i in edges.keys()) {
         addBackEdge(c, edges[i])
       }
     };
 
-    func remBackEdges(c:Context<Name, Val, Error, Env, Exp>, edges:[Edge<Name, Val, Error, Env, Exp>]) {
+    func remBackEdges(c:Context<Name, Val, Error, Closure>, edges:[Edge<Name, Val, Error, Closure>]) {
       for (i in edges.keys()) {
         remBackEdge(c, edges[i])
       }
     };
 
-    func addEdge(c:Context<Name, Val, Error, Env, Exp>, target:Name, action:Action<Val, Error, Env, Exp>) {
+    func addEdge(c:Context<Name, Val, Error, Closure>, target:Name, action:Action<Val, Error, Closure>) {
       let edge = switch (c.agent) {
       case (#editor) { /* the editor role is not recorded or memoized */ };
       case (#archivist) {
@@ -504,9 +503,9 @@ module {
       };
     };
 
-    func newEdgeBuf() : EdgeBuf<Name, Val, Error, Env, Exp> { Buf.Buf<Edge<Name, Val, Error, Env, Exp>>(03) };
+    func newEdgeBuf() : EdgeBuf<Name, Val, Error, Closure> { Buf.Buf<Edge<Name, Val, Error, Closure>>(03) };
 
-    func thunkIsDirty(t:Thunk<Name, Val, Error, Env, Exp>) : Bool {
+    func thunkIsDirty(t:Thunk<Name, Val, Error, Closure>) : Bool {
       for (i in t.outgoing.keys()) {
         if (t.outgoing[i].dirtyFlag) {
           return true
@@ -515,7 +514,7 @@ module {
       false
     };
 
-    func dirtyThunk(c:Context<Name, Val, Error, Env, Exp>, n:Name, thunkNode:Thunk<Name, Val, Error, Env, Exp>) {
+    func dirtyThunk(c:Context<Name, Val, Error, Closure>, n:Name, thunkNode:Thunk<Name, Val, Error, Closure>) {
       // to do: if the node is on the stack,
       //   then the DCG is overwriting names
       //   too often for change propagation to follow soundly; signal an error.
@@ -535,7 +534,7 @@ module {
       endLogEvent(c, #dirtyIncomingTo(n));
     };
 
-    func dirtyRef(c:Context<Name, Val, Error, Env, Exp>, n:Name, refNode:Ref<Name, Val, Error, Env, Exp>) {
+    func dirtyRef(c:Context<Name, Val, Error, Closure>, n:Name, refNode:Ref<Name, Val, Error, Closure>) {
       beginLogEvent(c);
       for (edge in refNode.incoming.iter()) {
         dirtyEdge(c, edge)
@@ -543,7 +542,7 @@ module {
       endLogEvent(c, #dirtyIncomingTo(n));
     };
 
-    func dirtyEdge(c:Context<Name, Val, Error, Env, Exp>, edge:Edge<Name, Val, Error, Env, Exp>) {
+    func dirtyEdge(c:Context<Name, Val, Error, Closure>, edge:Edge<Name, Val, Error, Closure>) {
       if (edge.dirtyFlag) {
         // graph invariants ==> dirtying is already done.
       } else {
@@ -560,7 +559,7 @@ module {
       }
     };
 
-    func cleanEdge(c:Context<Name, Val, Error, Env, Exp>, e:Edge<Name, Val, Error, Env, Exp>) : Bool {
+    func cleanEdge(c:Context<Name, Val, Error, Closure>, e:Edge<Name, Val, Error, Closure>) : Bool {
       beginLogEvent(c);
       let successFlag = if (e.dirtyFlag) {
         switch (e.checkpoint, c.store.get(e.dependency)) {
@@ -576,8 +575,8 @@ module {
                  true
                } else { false }
              };
-        case (#putThunk(oldClos), ?#thunk(thunkNode)) {
-               if (closureEq(oldClos, thunkNode.closure)) {
+        case (#putThunk(oldClosure), ?#thunk(thunkNode)) {
+               if (evalOps.closureEq(oldClosure, thunkNode.closure)) {
                  e.dirtyFlag := false;
                  true
                } else { false }
@@ -607,7 +606,7 @@ module {
       successFlag;
     };
 
-    func cleanThunk(c:Context<Name, Val, Error, Env, Exp>, n:Name, t:Thunk<Name, Val, Error, Env, Exp>) : Bool {
+    func cleanThunk(c:Context<Name, Val, Error, Closure>, n:Name, t:Thunk<Name, Val, Error, Closure>) : Bool {
       beginLogEvent(c);
       for (i in t.outgoing.keys()) {
         if (cleanEdge(c, t.outgoing[i])) {
@@ -626,9 +625,9 @@ module {
     };
 
     func evalThunk
-      (c:Context<Name, Val, Error, Env, Exp>,
+      (c:Context<Name, Val, Error, Closure>,
        nodeName:Name,
-       thunkNode:Thunk<Name, Val, Error, Env, Exp>)
+       thunkNode:Thunk<Name, Val, Error, Closure>)
       : R.Result<Val, Error>
     {
       beginLogEvent(c);
@@ -643,8 +642,7 @@ module {
       c.edges := Buf.Buf(0);
       c.stack := ?(nodeName, oldStack);
       remBackEdges(c, thunkNode.outgoing);
-      let res = evalOps.expEval(thunkNode.closure.env,
-                                thunkNode.closure.exp);
+      let res = evalOps.closureEval(thunkNode.closure);
       let edges = c.edges.toArray();
       c.agent := oldAgent;
       c.edges := oldEdges;
@@ -662,18 +660,18 @@ module {
     };
 
     func beginLogEvent
-      (c:Context<Name, Val, Error, Env, Exp>)
+      (c:Context<Name, Val, Error, Closure>)
     {
       if (c.logFlag) {
         c.logStack := ?(c.logBuf, c.logStack);
-        c.logBuf := Buf.Buf<LogEvent<Name, Val, Error, Env, Exp>>(03);
+        c.logBuf := Buf.Buf<LogEvent<Name, Val, Error, Closure>>(03);
       }
     };
 
     func logEvent
-      (tag:LogEventTag<Name, Val, Error, Env, Exp>,
-       events:[LogEvent<Name, Val, Error, Env, Exp>])
-      : LogEvent<Name, Val, Error, Env, Exp>
+      (tag:LogEventTag<Name, Val, Error, Closure>,
+       events:[LogEvent<Name, Val, Error, Closure>])
+      : LogEvent<Name, Val, Error, Closure>
     {
       switch tag {
       case (#put(v, n))      { #put(v, n,      events) };
@@ -688,8 +686,8 @@ module {
     };
 
     func endLogEvent
-      (c:Context<Name, Val, Error, Env, Exp>,
-       tag:LogEventTag<Name, Val, Error, Env, Exp>)
+      (c:Context<Name, Val, Error, Closure>,
+       tag:LogEventTag<Name, Val, Error, Closure>)
     {
       if (c.logFlag) {
         switch (c.logStack) {
