@@ -1,5 +1,6 @@
 import A "mo:adapton/adapton";
 import D "mo:adapton/draw";
+import E "mo:adapton/evalType";
 import H "mo:base/hash";
 import L "mo:base/list";
 import R "mo:base/result";
@@ -31,18 +32,18 @@ class Calc() {
   /* -- cache implementation, via adapton package -- */
   var namedCache : A.Engine<Name, Val, Error, Exp> = {
     let _errorEq = errorEq;
-    A.Engine(
-      {
-        nameEq=func (x:Text, y:Text) : Bool { x == y };
-        valEq=func (x:Int, y:Int) : Bool { x == y };
-        errorEq=_errorEq;
-        closureEq=expEq;
-        nameHash=H.hashOfText;
-        closureEval=eval;
-        cyclicDependency=func (stack:L.List<Name>, name:Name) {
-          assert false; loop { }
-        };
-      })
+    A.Engine<Name, Val, Error, Exp>({
+      nameEq=func (x:Text, y:Text) : Bool { x == y };
+      valEq=func (x:Int, y:Int) : Bool { x == y };
+      errorEq=_errorEq;
+      closureEq=expEq;
+      nameHash=H.hashOfText;
+      closureEval=eval;
+      cyclicDependency=func (stack:L.List<Name>, name:Name) : Error {
+        assert false; loop { }
+        }
+    },
+    true)
   };
 
   /* -- custom DSL evaluator definition: -- */
@@ -97,5 +98,6 @@ class Calc() {
     case _ { false };
     }
   };
-}
+
+ }
 }
