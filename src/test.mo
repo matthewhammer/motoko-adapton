@@ -1,5 +1,4 @@
-import T "types";
-import A "adapton2";
+import A "adapton";
 import D "draw";
 
 actor {

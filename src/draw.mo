@@ -1,6 +1,6 @@
 import Render "mo:redraw/Render";
 import E "evalType";
-import A "adapton2";
+import A "adapton";
 
 module {
 
