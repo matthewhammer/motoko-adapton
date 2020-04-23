@@ -162,8 +162,6 @@ module {
 
   // class accepts the associated operations over the 5 user-defined type params
   public class Engine<Name, Val, Error, Env, Exp>(evalOps:E.EvalOps<Name, Val, Error, Env, Exp>) {
-    // to do: define the public interface of Adapton using Eval to implement expression evaluation ...
-    // ... by following original cleanSheets implementation (mostly copying it, now commented out below).
 
     public func init(_logFlag:Bool) : Context<Name, Val, Error, Env, Exp> {
       let _evalOps = evalOps;
@@ -187,6 +185,9 @@ module {
         evalOps = _evalOps;
       }
     };
+
+    // to do: define the public interface of Adapton using Eval to implement expression evaluation ...
+    // ... by following original cleanSheets implementation (mostly copying it, now commented out below).
 
 /*
     public func closureEq(c1:Closure, c2:Closure) : Bool {
