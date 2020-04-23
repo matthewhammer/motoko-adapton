@@ -157,13 +157,36 @@ module {
     var logFlag: Bool;
     var logBuf: LogEventBuf<Name, Val, Error, Env, Exp>;
     var logStack: LogBufStack<Name, Val, Error, Env, Exp>;
-    var eval: E.Eval<Name, Val, Error, Env, Exp>;
+    evalOps: E.EvalOps<Name, Val, Error, Env, Exp>;
   };
 
   // class accepts the associated operations over the 5 user-defined type params
-  public class Engine<_Name, _Val, _Error, _Env, _Exp>(Eval:E.Eval<_Name, _Val, _Error, _Env, _Exp>) {
+  public class Engine<Name, Val, Error, Env, Exp>(evalOps:E.EvalOps<Name, Val, Error, Env, Exp>) {
     // to do: define the public interface of Adapton using Eval to implement expression evaluation ...
     // ... by following original cleanSheets implementation (mostly copying it, now commented out below).
+
+    public func init(_logFlag:Bool) : Context<Name, Val, Error, Env, Exp> {
+      let _evalOps = evalOps;
+      {
+        var agent = (#editor : {#editor; #archivist});
+
+        var edges : EdgeBuf<Name, Val, Error, Env, Exp> =
+          Buf.Buf<Edge<Name, Val, Error, Env, Exp>>(0);
+
+        var stack : Stack<Name> = null;
+
+        var store : Store<Name, Val, Error, Env, Exp> =
+          H.HashMap<Name, Node<Name, Val, Error, Env, Exp>>(03, _evalOps.nameEq, _evalOps.nameHash);
+
+        var logFlag = _logFlag;
+
+        var logBuf : LogEventBuf<Name, Val, Error, Env, Exp> =
+          Buf.Buf<LogEvent<Name, Val, Error, Env, Exp>>(0);
+
+        var logStack : LogBufStack<Name, Val, Error, Env, Exp> = null;
+        evalOps = _evalOps;
+      }
+    };
 
 /*
     public func closureEq(c1:Closure, c2:Closure) : Bool {
