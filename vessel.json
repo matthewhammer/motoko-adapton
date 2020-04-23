@@ -2,5 +2,5 @@
  "name": "adapton",
   "repo": "/home/hammer/motoko-adapton",
   "version": "v1.0.0",
-  "dependencies": ["stdlib", "stand", "redraw"]
+  "dependencies": ["base", "stand", "redraw"]
 }
