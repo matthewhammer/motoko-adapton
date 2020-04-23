@@ -1,24 +1,23 @@
 import Render "mo:redraw/Render";
-import T "types";
+import E "evalType";
+import A "adapton2";
 
 module {
-  
-  public type Result = Render.Result;
+
+  class Draw<Name,Val,Error,Env,Exp>() {
 
   public func begin() : Render.Render {
     Render.Render()
   };
 
-  public func env(r:Render.Render, env:T.Eval.Env) {
+  public func graph(r:Render.Render, a:A.Context<Name,Val,Error,Env,Exp>) {
     // to do
   };
 
-  public func graph(r:Render.Render, a:T.Adapton.Context) {
+  public func logEvent(r:Render.Render, ev:A.LogEvent<Name,Val,Error,Env,Exp>) {
     // to do
   };
 
-  public func logEvent(r:Render.Render, ev:T.Adapton.LogEvent) {
-    // to do
   };
 
 }
