@@ -1,11 +1,32 @@
-/** Adapton in Motoko, specialized for CleanSheets lang.
+/** Adapton in Motoko, as a class-based generic "functor".
 
 This module defines a general-purpose cache and dependence graph
-system.  We use it here for CleanSheets.  This Motoko code does not
-depend heavily on CleanSheets, however, and can be adapted for other
-purposes; it follows an established (published) algorithm.
+system.  See `EvalType.EvalOps` for details about its parameters.
 
-## Cleaning and dirtying algorithms
+## Public API:
+
+The public API of the class below has several operations, but the core API are these three:
+
+ - `put` a Value into a Ref, located at a Name.
+
+ - `putThunk` a suspended Exp into a Thunk, located at a Name.
+
+ - `get` the Value of a Ref, or the result of evaluating a Thunk, by its Name.
+
+Behind the scenes, Adapton caches the results and dependencies of
+user-defined thunks as they evaluate.
+
+Sometimes, a single thunk is demanded repeatedly amidst a series of
+changes (via `put` or `putThunk`).  When a previously-evaluated thunk
+is not "stale", Adapton reuses its past cached results and avoids
+recomputing it.  However, when these cached results are stale, Adapton
+will automatically recompute them and update its cache information, in
+place.  An overview of more details are below, and they consist of
+"dirtying" and "cleaning" operations over the graph that preserve its
+invariants.  See adapton.org for papers and the underlying theory.
+
+
+## Details: Cleaning and dirtying algorithms
 
 The algorithms in this module are only used by Adapton, not
 externally.  They permit the main API (put, putThunk, get) to dirty
@@ -71,7 +92,7 @@ import L "mo:base/list";
 import R "mo:base/result";
 import P "mo:base/prelude";
 
-import E "evalType";
+import E "EvalType";
 
 module {
 
