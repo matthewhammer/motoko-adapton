@@ -70,7 +70,7 @@ public class Calc() {
 
   public func eval(e:Exp) : R.Result<Val, Error> {
     if (not init) {
-      namedCache.setEvalClosure({eval=evalRec});
+      engine.setEvalClosure({eval=evalRec});
       init := true;
     };
     evalRec(e)
@@ -100,10 +100,10 @@ public class Calc() {
          };
     case (#named(n, e)) {
            // use the name to create a Thunk within the cache
-           switch (namedCache.putThunk(n, e)) {
+           switch (engine.putThunk(n, e)) {
            case (#err(_)) { #err(#putError(n)) };
            case (#ok(n)) {
-                  switch (namedCache.get(n)) {
+                  switch (engine.get(n)) {
                   case (#err(_)) { assert false; loop { } };
                   case (#ok(res)) { res };
                   }
@@ -144,7 +144,7 @@ public class Calc() {
 
   /* -- cache implementation, via adapton package -- */
 
-  public var namedCache : A.Engine<Name, Val, Error, Exp> = {
+  public var engine : A.Engine<Name, Val, Error, Exp> = {
     let _errorEq = errorEq;
     let engine = A.Engine<Name, Val, Error, Exp>
     ({
