@@ -1,0 +1,6 @@
+*~
+.vessel
+*.wasm
+*.did
+moc
+vessel
