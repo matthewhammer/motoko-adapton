@@ -1,1 +1,2 @@
-public import Calc "Calc";
+import C "Calc";
+public let Calc = C;
