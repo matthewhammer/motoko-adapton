@@ -1,2 +1,4 @@
 import C "Calc";
-public let Calc = C;
+module {
+  public let Calc = C;
+}
