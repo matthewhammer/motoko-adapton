@@ -144,7 +144,7 @@ public class Calc() {
 
   /* -- cache implementation, via adapton package -- */
 
-  var namedCache : A.Engine<Name, Val, Error, Exp> = {
+  public var namedCache : A.Engine<Name, Val, Error, Exp> = {
     let _errorEq = errorEq;
     let engine = A.Engine<Name, Val, Error, Exp>
     ({
