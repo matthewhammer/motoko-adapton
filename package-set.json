@@ -2,7 +2,7 @@
   {
     "name": "base",
     "repo": "/Users/matthew/dfn/motoko-base",
-    "version": "master",
+    "version": "imports",
     "dependencies": []
   },
   {
