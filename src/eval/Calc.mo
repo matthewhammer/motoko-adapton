@@ -1,5 +1,6 @@
-import A "mo:adapton/adapton";
-import E "mo:adapton/evalType";
+import A "../Adapton";
+import E "../EvalType";
+
 import H "mo:base/hash";
 import L "mo:base/list";
 import R "mo:base/result";
