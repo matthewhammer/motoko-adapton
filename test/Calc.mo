@@ -3,6 +3,7 @@ import E "mo:adapton/evalType";
 import H "mo:base/hash";
 import L "mo:base/list";
 import R "mo:base/result";
+import P "mo:base/prelude";
 
 import Debug "mo:base/debug";
 
@@ -30,13 +31,28 @@ public type Exp = {
 // simple integer-based calculator, with incremental caching
 class Calc() {
 
+  public func binOpOfExp(e:Exp)
+    : ?{#add;#sub;#mul;#div} {
+    switch e {
+    case (#add _) ?#add;
+    case (#sub _) ?#sub;
+    case (#mul _) ?#mul;
+    case (#div _) ?#div;
+    case _ null;
+    }
+  };
+
   /* -- extra stuff we need -- */
 
   func expEq(x:Exp, y:Exp) : Bool {
     switch (x, y) {
     case (#num(n1), #num(n2)) { n1 == n2 };
+    case (#named(n1, e1), #named(n2, e2)) { n1 == n2 and expEq(e1, e2) };
     case (#add(e1, e2), #add(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
-    case _ { false }; // to do
+    case (#mul(e1, e2), #mul(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
+    case (#div(e1, e2), #div(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
+    case (#sub(e1, e2), #sub(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
+    case _ { false };
     }
   };
 
@@ -64,17 +80,21 @@ class Calc() {
   func evalRec(e:Exp) : R.Result<Val, Error> {
     switch e {
     case (#num(n)) { #ok(n) };
-    case (#add(e1, e2)) {
-           switch (evalRec(e1)) {
-           case (#err(e)) #err(e);
-           case (#ok(n1)) {
-                  switch (evalRec(e2)) {
-                  case (#err(e)) #err(e);
-                  case (#ok(n2)) {
-                         #ok(n1 + n2)
-                       }
+    case ( #add(_, _) // feedback to compiler design: This would be easier if I could bind vars here.
+        or #sub(_, _)
+        or #mul(_, _)
+        or #div(_, _) ) {
+           switch (evalEagerPair(e)) {
+             case (#err(e)) #err(e);
+             case (#ok((n1, n2))) {
+                    switch (binOpOfExp(e)) {
+                    case null { P.unreachable() };
+                    case (?#add) { #ok(n1 + n2) };
+                    case (?#mul) { #ok(n1 * n2) };
+                    case (?#sub) { #ok(n1 - n2) };
+                    case (?#div) { if (n2 == 0) { #err(#divByZero) } else #ok(n1 / n2) };
                   }
-                }
+                  }
            }
          };
     case (#named(n, e)) {
@@ -89,9 +109,35 @@ class Calc() {
                 };
            }
          };
+/*
     case _ {
            #err(#unimplemented)
          }
+*/
+    }
+  };
+
+  func evalEagerPair(e:Exp) : R.Result<(Val, Val), Error> {
+    func doit(e1:Exp, e2:Exp) : R.Result<(Val, Val), Error> {
+      switch (evalRec(e1)) {
+      case (#err(e)) #err(e);
+      case (#ok(v1)) {
+             switch (evalRec(e2)) {
+             case (#err(e)) #err(e);
+             case (#ok(v2)) {
+                    #ok((v1, v2))
+                  }
+             }
+           }
+      }
+    };
+    switch e {
+      // redoing the pattern-match because I cannot bind vars in `or` patterns
+      case (#add(e1, e2)) { doit(e1, e2) };
+      case (#sub(e1, e2)) { doit(e1, e2) };
+      case (#div(e1, e2)) { doit(e1, e2) };
+      case (#mul(e1, e2)) { doit(e1, e2) };
+      case _ { P.unreachable() };
     }
   };
 
@@ -120,10 +166,28 @@ class Calc() {
 public func run() {
   // test the Calc definition above:
   let calc = Calc();
-  let exp = #add(#num(1), #add(#num(1), #num(2)));
+  let exp =
+    /* exp = (3 * (1 + 2)) / (5 - (4 / 2))
+     *      ||    |     ||   |    |     ||
+     *      ||    c-----+|   |    e-----+|
+     *      ||          ^|   |          ^|
+     *      ||          ||   |          ||
+     *      |b----------++   d----------++
+     *      |            ^               ^
+     *      |            |               |
+     *      a------------+---------------+
+     *                                   ^
+     *                                   |
+     */
+    #named("a",
+           #div(#named("b", #mul(#num(3), #named("c", #add(#num(1), #num(2))))),
+                #named("d", #sub(#num(5), #named("e", #div(#num(4), #num(2)))))));
+
   Debug.print (debug_show exp);
-  let res = calc.eval(exp);
-  Debug.print (debug_show res);
+  let res1 = calc.eval(exp);
+  Debug.print (debug_show res1);
+  let res2 = calc.eval(exp);
+  Debug.print (debug_show res2);
 };
 
 }
