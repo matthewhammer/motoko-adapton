@@ -1,9 +1,10 @@
 /** Adapton in Motoko, as a class-based generic "functor".
 
 This module defines a general-purpose cache and dependence graph
-system.  See `EvalType.EvalOps` for details about its parameters.
+system.  See `EvalType` module for details about its parameters.
 
-The client of this API chooses 4 representations:
+In brief, the client of this API chooses 4 representations
+for a customized incremental interpter that they define:
 
  - `Name` -- the identity of cached information; must be unique.
  - `Val` -- the type of data stored in Named Refs, and produced by successfully-evaluated Closures.
@@ -182,15 +183,17 @@ module {
     var logFlag: Bool;
     var logBuf: LogEventBuf<Name, Val, Error, Closure>;
     var logStack: LogBufStack<Name, Val, Error, Closure>;
+    // defined and supplied by the client:
     evalOps: E.EvalOps<Name, Val, Error, Closure>;
+    var evalClosure: ?E.EvalClosure<Val, Error, Closure>;
   };
 
-  // class accepts the associated operations over the 4 user-defined type params
+  // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `EvalType` module
   public class Engine<Name, Val, Error, Closure>(evalOps:E.EvalOps<Name, Val, Error, Closure>, _logFlag:Bool) {
 
     /* Initialize */
 
-    public func init(_logFlag:Bool) : Context<Name, Val, Error, Closure> {
+    func init(_logFlag:Bool) : Context<Name, Val, Error, Closure> {
       let _evalOps = evalOps;
       {
         var agent = (#editor : {#editor; #archivist});
@@ -210,6 +213,15 @@ module {
 
         var logStack : LogBufStack<Name, Val, Error, Closure> = null;
         evalOps = _evalOps;
+        var evalClosure = (null : ?E.EvalClosure<Val, Error, Closure>);
+      }
+    };
+
+    // Call exactly once, before any accesses; See usage instructions in `EvalType` module.
+    public func setEvalClosure(evalClosure:E.EvalClosure<Val, Error, Closure>) {
+      switch (context.evalClosure) {
+        case null { context.evalClosure := ?evalClosure };
+        case (?_) { assert false };
       }
     };
 
@@ -642,7 +654,10 @@ module {
       c.edges := Buf.Buf(0);
       c.stack := ?(nodeName, oldStack);
       remBackEdges(c, thunkNode.outgoing);
-      let res = evalOps.closureEval(thunkNode.closure);
+      let res = switch (c.evalClosure) {
+        case null { assert false; loop { } };
+        case (?closureEval) { closureEval.eval(thunkNode.closure) };
+      };
       let edges = c.edges.toArray();
       c.agent := oldAgent;
       c.edges := oldEdges;
