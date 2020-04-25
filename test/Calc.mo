@@ -25,10 +25,10 @@ actor {
     Debug.print (debug_show exp);
     let res1 = calc.eval(exp);
     Debug.print (debug_show res1);
-    Debug.print (debug_show calc.engine.getLogEventLast());
+    //Debug.print (debug_show calc.engine.getLogEventLast());
     let res2 = calc.eval(exp);
     Debug.print (debug_show res2);
-    Debug.print (debug_show calc.engine.getLogEventLast());
+    //Debug.print (debug_show calc.engine.getLogEventLast());
   };
 
 }
