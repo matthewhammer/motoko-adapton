@@ -310,7 +310,7 @@ module {
 
     public func getLogEventLast() : ?LogEvent<Name, Val, Error, Closure> {
       if (context.logBuf.len() > 0) {
-        ?context.logBuf.get(context.logBuf.len())
+        ?context.logBuf.get(context.logBuf.len() - 1)
       } else {
         null
       }
