@@ -27,19 +27,19 @@ module {
 
   // Flow atts --------------------------------------------------------
 
-  func horz () : Render.FlowAtts {
+  func horz () : Render.FlowAtts = {
     dir=#right;
     interPad=1;
     intraPad=1;
   };
 
-  func vert () : Render.FlowAtts {
+  func vert () : Render.FlowAtts = {
     dir=#down;
     interPad=1;
     intraPad=1;
   };
 
-  func textHorz () : Render.FlowAtts {
+  func textHorz () : Render.FlowAtts = {
     dir=#right;
     interPad=1;
     intraPad=1;
