@@ -23,17 +23,24 @@ actor {
              #div(#named("b", #mul(#num(3), #named("c", #add(#num(1), #num(2))))),
                   #named("d", #sub(#num(5), #named("e", #div(#num(4), #num(2)))))));
 
-    let res1 = calc.eval(exp);    
+    let res1 = calc.eval(exp);
     calc.engine.draw.logEvent();
-    
+
     // to do -- change the expression somehow
-    
+
+
     let res2 = calc.eval(exp);
     calc.engine.draw.logEvent();
     calc.engine.draw.getResult()
   };
 
-  // To do -- try to reproduce and minimize what this code triggers in compiler:
-  //Debug.print (debug_show calc.engine.getLogEventLast());
+  public func bug() {
+    // To do -- try to isolate and minimize what this code triggers in compiler:
+
+    //   Debug.print (debug_show calc.engine.getLogEventLast());
+
+    // Based on the argument type to debug_show,
+    // it seems to have to do with the "LogEvent" type defined in the LogType module.
+  };
 
 }

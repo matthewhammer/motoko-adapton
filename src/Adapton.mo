@@ -145,12 +145,9 @@ module {
       }
     };
 
-    /* Special context for public api */
+    /* A distinguished context for the Main API */
 
     public var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
-
-    public var draw : Draw.Draw<Name, Val, Error, Closure> =
-      Draw.Draw<Name, Val, Error, Closure>(Self);
 
     /* Main API: put, putThunk, and get */
 
@@ -167,6 +164,9 @@ module {
       = contextGet(context, n);
 
     /* Public utilities */
+
+    public var draw : Draw.Draw<Name, Val, Error, Closure> =
+      Draw.Draw<Name, Val, Error, Closure>(Self);
 
     public func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {
@@ -354,7 +354,7 @@ module {
 
     /* Private implementation details --- Change propagation (aka, "dirtying and cleaning") algorithms below.  */
 
-    func newEdge(source:Name, target:Name, action:G.Action<Val, Error, Closure>) 
+    func newEdge(source:Name, target:Name, action:G.Action<Val, Error, Closure>)
       : G.Edge<Name, Val, Error, Closure> {
       { dependent=source;
         dependency=target;
