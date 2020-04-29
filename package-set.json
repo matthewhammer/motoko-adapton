@@ -1,19 +1,19 @@
 [
   {
     "name": "base",
-    "repo": "/Users/matthew/dfn/motoko-base",
+    "repo": "git@github.com:dfinity-lab/motoko-base.git",
     "version": "master",
     "dependencies": []
   },
   {
     "name": "stand",
-    "repo": "/Users/matthew/dfn/motoko-stand",
+    "repo": "https://github.com/matthewhammer/motoko-stand/",
     "version": "master",
     "dependencies": ["base"]
   },
   {
     "name": "redraw",
-    "repo": "/Users/matthew/dfn/motoko-redraw",
+    "repo": "https://github.com/matthewhammer/motoko-redraw/",
     "version": "master",
     "dependencies": ["base", "stand"]
   }
