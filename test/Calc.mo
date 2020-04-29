@@ -24,13 +24,13 @@ actor {
                   #named("d", #sub(#num(5), #named("e", #div(#num(4), #num(2)))))));
 
     let res1 = calc.eval(exp);
-    calc.engine.draw.logEvent();
+    calc.engine.draw.logEventLast();
 
     // to do -- change the expression somehow
 
 
     let res2 = calc.eval(exp);
-    calc.engine.draw.logEvent();
+    calc.engine.draw.logEventLast();
     calc.engine.draw.getResult()
   };
 
