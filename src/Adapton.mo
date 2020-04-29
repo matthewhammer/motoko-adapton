@@ -104,7 +104,7 @@ import P "mo:base/prelude";
 
 import E "EvalType";
 import G "GraphType";
-import Log "LogEvent";
+import Log "Log";
 import Draw "Draw";
 
 module {
