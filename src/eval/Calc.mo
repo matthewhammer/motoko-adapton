@@ -180,7 +180,7 @@ public class Calc() {
       name = func (r:Render.Render, t:Text) {  };
       val = func (r:Render.Render, i:Int) {  };
       error = func (r:Render.Render, e:Error) { };
-      closure = func (r:Render.Render, c:Closure) { };
+      closure = func (r:Render.Render, e:Exp) { };
     }
     // not yet fully initialized (still need to do setClosureEval)
     engine
