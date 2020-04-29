@@ -118,7 +118,7 @@ module {
     };
 
     func logEventBody(render:Render.Render, ls:[G.LogEvent<Name, Val, Error, Closure>]) {
-      for (l in ls) { logEventRec(render, l) }
+      for (l in ls.vals()) { logEventRec(render, l) }
     };
 
     func logEventRec(render:Render.Render, l:G.LogEvent<Name, Val, Error, Closure>) {
