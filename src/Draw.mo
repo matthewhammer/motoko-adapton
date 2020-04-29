@@ -172,7 +172,7 @@ module {
            };
       case (#evalThunk(_name, _res)) {
              render.text("evalThunk", ta);
-             name(name);
+             name(_name);
              result(_res);
            };
       };
@@ -185,11 +185,11 @@ module {
       // to do -- draw the current roots and edges of the engine, including their current status
     };
 
-
-
-
     public func logEventLast() {
-      logEventRec(render, engine.getLogEventLast())
+      switch (engine.getLogEventLast()) {
+      case null { };
+      case (?l) { logEventRec(render, l) }
+      }
     };
 
     public func getResult() : Render.Result {
