@@ -47,7 +47,7 @@ module {
 
   // Text atts --------------------------------------------------------
 
-  func taFill(fg:Render.Fill) = {
+  func taFill(fg:Render.Fill) : Render.TextAtts = {
     {
       zoom=2;
       fgFill=fg;
