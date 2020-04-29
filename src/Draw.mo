@@ -1,8 +1,5 @@
 import Render "mo:redraw/Render";
-
-import E "EvalType";
 import G "GraphType";
-import LogEvent "LogEvent";
 
 module {
 
