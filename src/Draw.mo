@@ -47,14 +47,14 @@ module {
 
   // Text atts --------------------------------------------------------
 
-  func taFill(fg:Render.Fill) : Render.TextAtts = {
+  func taFill(fg:Render.Fill) = {
     {
       zoom=2;
       fgFill=fg;
       bgFill=#closed((0, 0, 0));
       glyphDim={width=5;height=5};
       glyphFlow=textHorz;
-    }
+    } : Render.TextAtts
   };
 
   func taLogEventTag() : Render.TextAtts =
