@@ -176,7 +176,7 @@ public class Calc() {
      },
      true);
     // to do: draw things
-    engine.renderOps := {
+    engine.renderOps := ?{
       name = func (r:Render.Render, t:Text) {  };
       val = func (r:Render.Render, i:Int) {  };
       error = func (r:Render.Render, e:Error) { };
