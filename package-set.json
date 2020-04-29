@@ -18,13 +18,13 @@
     "dependencies": ["base", "stand"]
   },
   {
-    "name": "adaptonX",
+    "name": "adapton",
     "repo": "https://github.com/matthewhammer/motoko-adapton/",
-    "version": "master",
+    "version": "draw",
     "dependencies": ["base", "stand", "redraw"]
   },
   {
-    "name": "adapton",
+    "name": "adaptonX",
     "repo": "/Users/matthew/dfn/motoko-adapton",
     "version": "draw",
     "dependencies": ["base", "stand", "redraw"]
