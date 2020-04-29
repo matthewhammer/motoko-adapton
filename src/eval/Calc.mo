@@ -32,9 +32,6 @@ public type Exp = { // *
   #named: (Name, Exp); // record a cached result at Name
 };
 
-public type LogEvent = A.LogEvent<Name, Val, Error, Exp>;
-public type LogEventTag = A.LogEventTag<Name, Val, Error, Exp>;
-
 // simple integer-based calculator, with incremental caching
 public class Calc() {
 

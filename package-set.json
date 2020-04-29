@@ -16,5 +16,11 @@
     "repo": "https://github.com/matthewhammer/motoko-redraw/",
     "version": "master",
     "dependencies": ["base", "stand"]
+  },
+  {
+    "name": "adapton",
+    "repo": "https://github.com/matthewhammer/motoko-adapton/",
+    "version": "master",
+    "dependencies": ["base", "stand", "redraw"]
   }
 ]
