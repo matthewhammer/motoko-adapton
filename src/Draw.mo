@@ -197,7 +197,7 @@ module {
       let res = render.getResult();
       { // start the next rendering...
         render := Render();
-        r.begin(#flow(vert()));
+        render.begin(#flow(vert()));
       };
       res
     };
