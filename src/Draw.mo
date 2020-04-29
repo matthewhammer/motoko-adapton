@@ -196,7 +196,7 @@ module {
       render.end();
       let res = render.getResult();
       { // start the next rendering...
-        render := Render();
+        render := Render.Render();
         render.begin(#flow(vert()));
       };
       res
