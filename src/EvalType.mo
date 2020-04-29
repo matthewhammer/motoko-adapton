@@ -5,6 +5,8 @@ import List "mo:base/list";
 import H "mo:base/hashMap";
 import L "mo:base/list";
 
+import Render "mo:redraw/Render";
+
 // Types defined by the interpreter client using Adapton:
 module {
 
@@ -68,6 +70,14 @@ public type EvalOps<Name, Val, Error, Closure> = {
 
 public type EvalClosure<Val, Error, Closure> = {
   eval: Closure -> {#ok:Val; #err:Error};
+};
+
+// Optional 2D graphics: Specify how to render each type:
+public type RenderOps<Name, Val, Error, Closure> = {
+  name:    (Render.Render, Name) -> ();
+  val:     (Render.Render, Val) -> ();
+  error:   (Render.Render, Error) -> ();
+  closure: (Render.Render, Closure) -> ();  
 };
 
 }

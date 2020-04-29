@@ -145,6 +145,12 @@ module {
       }
     };
 
+    var renderOps : ?E.RenderOps<Name, Val, Error, Closure>;
+
+    public func setRenderOps(_renderOps:E.RenderOps<Name, Val, Error, Closure>) {
+      renderOps := ?_renderOps;
+    };
+
     /* A distinguished context for the Main API */
 
     public var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
@@ -601,29 +607,14 @@ module {
       res
     };
 
+    /** -- private log utils -- */
+
     func beginLogEvent
       (c:G.Context<Name, Val, Error, Closure>)
     {
       if (c.logFlag) {
         c.logStack := ?(c.logBuf, c.logStack);
         c.logBuf := Buf.Buf<G.LogEvent<Name, Val, Error, Closure>>(03);
-      }
-    };
-
-    func logEvent
-      (tag:G.LogEventTag<Name, Val, Error, Closure>,
-       events:[G.LogEvent<Name, Val, Error, Closure>])
-      : G.LogEvent<Name, Val, Error, Closure>
-    {
-      switch tag {
-      case (#put(v, n))      { #put(v, n,      events) };
-      case (#putThunk(c, n)) { #putThunk(c, n, events) };
-      case (#get(r, n))      { #get(r, n,      events) };
-      case (#dirtyIncomingTo(n)){ #dirtyIncomingTo(n,events) };
-      case (#dirtyEdgeFrom(n)){ #dirtyEdgeFrom(n,events) };
-      case (#cleanEdgeTo(n,f)) { #cleanEdgeTo(n,f,events) };
-      case (#cleanThunk(n,f)) { #cleanThunk(n,f,events) };
-      case (#evalThunk(n,r)) { #evalThunk(n,r,events) };
       }
     };
 
@@ -642,6 +633,58 @@ module {
                c.logBuf.add(ev);
              }
         }
+      }
+    };
+
+    /** -- public log utils, parameterized by the types Name, Val, Error, Closure -- */
+
+    public func logEvent
+      (tag:G.LogEventTag<Name, Val, Error, Closure>,
+       events:[G.LogEvent<Name, Val, Error, Closure>])
+      : G.LogEvent<Name, Val, Error, Closure>
+    {
+      switch tag {
+      case (#put(v, n))      { #put(v, n,      events) };
+      case (#putThunk(c, n)) { #putThunk(c, n, events) };
+      case (#get(r, n))      { #get(r, n,      events) };
+      case (#dirtyIncomingTo(n)){ #dirtyIncomingTo(n,events) };
+      case (#dirtyEdgeFrom(n)){ #dirtyEdgeFrom(n,events) };
+      case (#cleanEdgeTo(n,f)) { #cleanEdgeTo(n,f,events) };
+      case (#cleanThunk(n,f)) { #cleanThunk(n,f,events) };
+      case (#evalThunk(n,r)) { #evalThunk(n,r,events) };
+      }
+    };
+
+
+    public func logEventBody
+      (event:G.LogEvent<Name, Val, Error, Closure>)
+      : [G.LogEvent<Name, Val, Error, Closure>]
+    {
+      switch tag {
+      case (#put(v, n, evts))      { evts };
+      case (#putThunk(c, n, evts)) { evts };
+      case (#get(r, n, evts))      { evts };
+      case (#dirtyIncomingTo(n, evts)){ evts };
+      case (#dirtyEdgeFrom(n, evts)){ evts };
+      case (#cleanEdgeTo(n,f, evts)) { evts };
+      case (#cleanThunk(n,f, evts)) { evts };
+      case (#evalThunk(n,r, evts)) { evts };
+      }
+    };
+
+    public func logEventTag
+      (event:G.LogEvent<Name, Val, Error, Closure>)
+      : G.LogEventTag<Name, Val, Error, Closure>
+    {
+      switch tag {
+      case (#put(v, n, evts))      { #put(v, n) };
+      case (#putThunk(c, n, evts)) { #putThunk(c, n) };
+      case (#get(r, n, evts))      { #get(r, n) };
+      case (#dirtyIncomingTo(n, evts)){ #dirtyIncomingTo(n) };
+      case (#dirtyEdgeFrom(n, evts)){ #dirtyEdgeFrom(n) };
+      case (#cleanEdgeTo(n,f, evts)) { #cleanEdgeTo(n, f) };
+      case (#cleanThunk(n,f, evts)) { #cleanThunk(n, f) };
+      case (#evalThunk(n,r, evts)) { #evalThunk(n, r) };
       }
     };
 

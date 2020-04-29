@@ -8,6 +8,9 @@ import P "mo:base/prelude";
 
 import Debug "mo:base/debug";
 
+import Render "mo:redraw/Render";
+
+
 /* # Example of using Adapton functor (modules A and E imported above). */
 
 /* Adapton functor step 1a:
@@ -172,6 +175,13 @@ public class Calc() {
        }
      },
      true);
+    // to do: draw things
+    engine.renderOps := {
+      name = func (r:Render.Render, t:Text) {  };
+      val = func (r:Render.Render, i:Int) {  };
+      error = func (r:Render.Render, e:Error) { };
+      closure = func (r:Render.Render, c:Closure) { };
+    }
     // not yet fully initialized (still need to do setClosureEval)
     engine
   };
