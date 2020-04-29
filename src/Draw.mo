@@ -117,11 +117,11 @@ module {
       }
     };
 
-    func logEventBody(render:Render.Render, ls:[G.LogEvent]) {
+    func logEventBody(render:Render.Render, ls:[G.LogEvent<Name, Val, Error, Closure>]) {
       for (l in ls) { logEventRec(render, l) }
     };
 
-    func logEventRec(render:Render.Render, l:G.LogEvent) {
+    func logEventRec(render:Render.Render, l:G.LogEvent<Name, Val, Error, Closure>) {
       render.begin(#flow(vert()));
       logEventTag(render, engine.logEventTag(l));
       { // indent body
@@ -133,7 +133,7 @@ module {
       render.end();
     };
 
-    func logEventTag(render:Render.Render, tag:G.LogEventTag) {
+    func logEventTag(render:Render.Render, tag:G.LogEventTag<Name, Val, Error, Closure>) {
       render.begin(#flow(vert()));
       let ta = taFill(#closed(255, 255, 255));
       switch tag {
