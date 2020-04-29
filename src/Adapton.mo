@@ -656,7 +656,7 @@ module {
       (event:G.LogEvent<Name, Val, Error, Closure>)
       : [G.LogEvent<Name, Val, Error, Closure>]
     {
-      switch tag {
+      switch event {
       case (#put(v, n, evts))      { evts };
       case (#putThunk(c, n, evts)) { evts };
       case (#get(r, n, evts))      { evts };
@@ -672,7 +672,7 @@ module {
       (event:G.LogEvent<Name, Val, Error, Closure>)
       : G.LogEventTag<Name, Val, Error, Closure>
     {
-      switch tag {
+      switch event {
       case (#put(v, n, evts))      { #put(v, n) };
       case (#putThunk(c, n, evts)) { #putThunk(c, n) };
       case (#get(r, n, evts))      { #get(r, n) };
