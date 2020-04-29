@@ -145,11 +145,7 @@ module {
       }
     };
 
-    var renderOps : ?E.RenderOps<Name, Val, Error, Closure> = null;
-
-    public func setRenderOps(_renderOps:E.RenderOps<Name, Val, Error, Closure>) {
-      renderOps := ?_renderOps;
-    };
+    public var renderOps : ?E.RenderOps<Name, Val, Error, Closure> = null;
 
     /* A distinguished context for the Main API */
 
