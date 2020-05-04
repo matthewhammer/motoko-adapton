@@ -35,25 +35,19 @@ module {
     perform Closure evaluation.  Steps (b) and (c) are still needed below.
 
  b. Defines the evaluation function required by item 2 above,
-    using the cache just defined in item (a).  See tests dir for examples.
+    using the cache just defined in item (a).
 
- c. Updates the Engine from step (a) to use the evaluation function from step (b).
-    Again, see tests dir for examples.
+ c. Updates the Engine from step (a) to 
+    use the evaluation function from step (b).
 
  Now, the evaluation function in step (b) is fully-defined,
  and it is ready to use the cache provided by the adapton package.
+ 
+ See tests dir for an example.
 
 */
 
 public type EvalOps<Name, Val, Error, Closure> = {
-
-/* Once we have type components in records, move here:
-  type Name = _Name;
-  type Val = _Val;
-  type Error = _Error;
-  type Env = _Env;
-  type Exp = _Exp;
-*/
 
   // an equality operation for each type:
   nameEq : (n1:Name, n2:Name) -> Bool;
@@ -64,7 +58,7 @@ public type EvalOps<Name, Val, Error, Closure> = {
   // hash operations (only Name for now):
   nameHash : (n:Name) -> Hash.Hash;
 
-  // abstract expression evaluation
+  // cyclicDependency: constructor for a dynamic error:
   cyclicDependency : (L.List<Name>, Name) -> Error;
 };
 
