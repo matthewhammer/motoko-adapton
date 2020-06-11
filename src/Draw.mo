@@ -91,29 +91,29 @@ module {
 
     public func name(n:Name) {
       switch (getEngine().renderOps) {
-        case (?ops) ops.name(render, n);
-        case null { };
+        case (?ops) ops.name(textRender, n);
+        case null { assert false };
       }
     };
 
     public func val(v:Val) {
       switch (getEngine().renderOps) {
-        case (?ops) ops.val(render, v);
-        case null { };
+        case (?ops) ops.val(textRender, v);
+        case null { assert false };
       }
     };
 
     public func closure(c:Closure) {
       switch (getEngine().renderOps) {
-        case (?ops) ops.closure(render, c);
-        case null { };
+        case (?ops) ops.closure(textRender, c);
+        case null { assert false };
       }
     };
 
     public func error(e:Error) {
       switch (getEngine().renderOps) {
-        case (?ops) ops.error(render, e);
-        case null { };
+        case (?ops) ops.error(textRender, e);
+        case null { assert false };
       }
     };
 
