@@ -5,6 +5,8 @@ import List "mo:base/list";
 import H "mo:base/hashMap";
 import L "mo:base/list";
 
+import Render "mo:redraw/Render";
+
 // Types defined by the interpreter client using Adapton:
 module {
 
@@ -18,12 +20,12 @@ module {
     How to hash Names?
 
  2. How to evaluate a Closure to an Error or Val?
-  
 
- We separate the interpreter's definition into parts 1 and 2 above 
- in order to break the cycle of dependencies that connects the Adapton 
+
+ We separate the interpreter's definition into parts 1 and 2 above
+ in order to break the cycle of dependencies that connects the Adapton
  engine's need for evaluation with the interpreter's
- need to access the cache.  
+ need to access the cache.
 
  To resolve this cycle, the Adapton client does three steps, not one:
 
@@ -33,25 +35,19 @@ module {
     perform Closure evaluation.  Steps (b) and (c) are still needed below.
 
  b. Defines the evaluation function required by item 2 above,
-    using the cache just defined in item (a).  See tests dir for examples.
+    using the cache just defined in item (a).
 
- c. Updates the Engine from step (a) to use the evaluation function from step (b).
-    Again, see tests dir for examples.
+ c. Updates the Engine from step (a) to
+    use the evaluation function from step (b).
 
  Now, the evaluation function in step (b) is fully-defined,
  and it is ready to use the cache provided by the adapton package.
 
+ See tests dir for an example.
+
 */
 
 public type EvalOps<Name, Val, Error, Closure> = {
-
-/* Once we have type components in records, move here:
-  type Name = _Name;
-  type Val = _Val;
-  type Error = _Error;
-  type Env = _Env;
-  type Exp = _Exp;
-*/
 
   // an equality operation for each type:
   nameEq : (n1:Name, n2:Name) -> Bool;
@@ -62,12 +58,20 @@ public type EvalOps<Name, Val, Error, Closure> = {
   // hash operations (only Name for now):
   nameHash : (n:Name) -> Hash.Hash;
 
-  // abstract expression evaluation
+  // cyclicDependency: constructor for a dynamic error:
   cyclicDependency : (L.List<Name>, Name) -> Error;
 };
 
 public type EvalClosure<Val, Error, Closure> = {
   eval: Closure -> {#ok:Val; #err:Error};
+};
+
+// Optional 2D graphics: Specify how to render each type:
+public type RenderOps<Name, Val, Error, Closure> = {
+  name:    (Render.TextRender, Name) -> ();
+  val:     (Render.TextRender, Val) -> ();
+  error:   (Render.TextRender, Error) -> ();
+  closure: (Render.TextRender, Closure) -> ();
 };
 
 }

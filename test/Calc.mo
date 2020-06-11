@@ -1,8 +1,12 @@
-import C "mo:adapton/eval/Calc";
-import Debug "mo:base/debug";
+import C "../src/eval/Calc";
+import Render "mo:redraw/Render";
+import Debug "mo:base/Debug";
 
 actor {
-  public func run() {
+  // for client side, see https://github.com/matthewhammer/ic-game-terminal
+  public func windowSizeChange(_dim:Render.Dim) : async Render.Result {
+    // to do -- use dim
+
     // test the Calc definition imported above:
     let calc = C.Calc();
     let exp =
@@ -22,11 +26,13 @@ actor {
              #div(#named("b", #mul(#num(3), #named("c", #add(#num(1), #num(2))))),
                   #named("d", #sub(#num(5), #named("e", #div(#num(4), #num(2)))))));
 
-    Debug.print (debug_show exp);
     let res1 = calc.eval(exp);
-    Debug.print (debug_show res1);
-    let res2 = calc.eval(exp);
-    Debug.print (debug_show res2);
-  };
+    calc.engine.draw().logEventLast();
 
+    // to do -- change the expression somehow
+
+    let res2 = calc.eval(exp);
+    calc.engine.draw().logEventLast();
+    calc.engine.draw().getResult()
+  };
 }
