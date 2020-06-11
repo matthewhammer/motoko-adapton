@@ -167,8 +167,14 @@ module {
 
     /* Public utilities */
 
-    public var draw : Draw.Draw<Name, Val, Error, Closure> =
-      Draw.Draw<Name, Val, Error, Closure>(Self);
+    private var _draw : Draw.Draw<Name, Val, Error, Closure> =
+      Draw.Draw<Name, Val, Error, Closure>();
+
+    public func draw() : Draw.Draw<Name, Val, Error, Closure> {
+      // overcome cyclic reference between Draw and Engine classes
+      _draw.engine := ?Self;
+      _draw
+    };
 
     public func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {
@@ -597,7 +603,7 @@ module {
         outgoing=edges;
         incoming=newEdgeBuf();
       };
-      ignore c.store.set(nodeName, #thunk(newNode));
+      c.store.set(nodeName, #thunk(newNode));
       addBackEdges(c, newNode.outgoing);
       endLogEvent(c, #evalThunk(nodeName, res));
       res

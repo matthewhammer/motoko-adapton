@@ -2,5 +2,5 @@
  "name": "testAdapton",
   "repo": "git@github.com:matthewhammer/motoko-adapton",
   "version": "v1.0.0",
-  "dependencies": ["base", "stand", "redraw", "adapton"]
+  "dependencies": ["base", "stand", "redraw"]
 }

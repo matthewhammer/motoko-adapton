@@ -1,4 +1,7 @@
 import Render "mo:redraw/Render";
+import Mono5x5 "mo:redraw/glyph/Mono5x5";
+
+import P "mo:base/Prelude";
 import E "EvalType";
 import G "GraphType";
 
@@ -47,20 +50,25 @@ module {
 
   // Text atts --------------------------------------------------------
 
-  func taFill(fg:Render.Fill) : Render.TextAtts = {
+  type TextAtts = Render.BitMapTextAtts;
+  func taFill(fg:Render.Fill) : TextAtts = {
     zoom=2;
     fgFill=fg;
     bgFill=#closed((0, 0, 0));
-    glyphDim={width=5;height=5};
-    glyphFlow=textHorz();
+    flow=textHorz();
   };
 
-  func taLogEventTag() : Render.TextAtts =
+  func taLogEventTag() : TextAtts =
     taFill(#closed((180, 140, 190)));
 
 
   // a single engine has a single draw object, associated in one direction via this constructor:
-  public class Draw<Name,Val,Error,Closure>( engine : Engine<Name,Val,Error,Closure> ) {
+  public class Draw<Name,Val,Error,Closure>() {
+
+    public var engine : ?Engine<Name,Val,Error,Closure> = null;
+
+    func getEngine() : Engine<Name,Val,Error,Closure> =
+      switch engine { case null P.unreachable(); case (?e) e; };
 
     var render = {
       let r = Render.Render();
@@ -68,31 +76,42 @@ module {
       r
     };
 
+    var charRender =
+      Render.CharRender(render, Mono5x5.bitmapOfChar,
+                        {
+                          zoom = 3;
+                          fgFill = #closed((255, 255, 255));
+                          bgFill = #closed((0, 0, 0));
+                          flow = horz()
+                        });
+
+    var textRender = Render.TextRender(charRender);
+
     /* -- shorthands -- redirect back to the client's code, for their types -- */
 
     public func name(n:Name) {
-      switch (engine.renderOps) {
+      switch (getEngine().renderOps) {
         case (?ops) ops.name(render, n);
         case null { };
       }
     };
 
     public func val(v:Val) {
-      switch (engine.renderOps) {
+      switch (getEngine().renderOps) {
         case (?ops) ops.val(render, v);
         case null { };
       }
     };
 
     public func closure(c:Closure) {
-      switch (engine.renderOps) {
+      switch (getEngine().renderOps) {
         case (?ops) ops.closure(render, c);
         case null { };
       }
     };
 
     public func error(e:Error) {
-      switch (engine.renderOps) {
+      switch (getEngine().renderOps) {
         case (?ops) ops.error(render, e);
         case null { };
       }
@@ -107,11 +126,15 @@ module {
       }
     };
 
+    public func text(t : Text, ta : TextAtts) {
+      textRender.textAtts(t, ta)
+    };
+
     public func flag(f:Bool) {
       if f {
-        render.text("true", taFill(#closed(255, 255, 255)))
+        text("true", taFill(#closed(255, 255, 255)))
       } else {
-        render.text("false", taFill(#closed(255, 255, 255)))
+        text("false", taFill(#closed(255, 255, 255)))
       }
     };
 
@@ -121,55 +144,55 @@ module {
 
     func logEventRec(render:Render.Render, l:G.LogEvent<Name, Val, Error, Closure>) {
       render.begin(#flow(vert()));
-      logEventTag(render, engine.logEventTag(l));
+      logEventTag(render, getEngine().logEventTag(l));
       { // indent body
         render.begin(#flow(horz()));
-        render.text(" ", taFill(#closed(0, 0, 0)));
-        logEventBody(render, engine.logEventBody(l));
+        text(" ", taFill(#closed(0, 0, 0)));
+        logEventBody(render, getEngine().logEventBody(l));
         render.end();
       };
       render.end();
     };
 
     func logEventTag(render:Render.Render, tag:G.LogEventTag<Name, Val, Error, Closure>) {
-      render.begin(#flow(vert()));
+      render.begin(#flow(horz()));
       let ta = taFill(#closed(255, 255, 255));
       switch tag {
       case (#put(_name, _val)) {
-             render.text("put", ta);
+             text("put", ta);
              name(_name);
              val(_val);
            };
       case (#putThunk(_name, _clos)) {
-             render.text("putThunk", ta);
+             text("putThunk", ta);
              name(_name);
              closure(_clos);
            };
       case (#get(_name, _res)) {
-             render.text("get", ta);
+             text("get", ta);
              name(_name);
              result(_res);
            };
       case (#dirtyIncomingTo(_name)) {
-             render.text("dirtyIncomingTo", ta);
+             text("dirtyIncomingTo", ta);
              name(_name);
            };
       case (#dirtyEdgeFrom(_name)) {
-             render.text("dirtyEdgeFrom", ta);
+             text("dirtyEdgeFrom", ta);
              name(_name);
            };
       case (#cleanEdgeTo(_name, _flag)) {
-             render.text("cleanEdgeTo", ta);
+             text("cleanEdgeTo", ta);
              name(_name);
              flag(_flag);
           };
       case (#cleanThunk(_name, _flag)) {
-             render.text("cleanThunk", ta);
+             text("cleanThunk", ta);
              name(_name);
              flag(_flag);
            };
       case (#evalThunk(_name, _res)) {
-             render.text("evalThunk", ta);
+             text("evalThunk", ta);
              name(_name);
              result(_res);
            };
@@ -184,7 +207,7 @@ module {
     };
 
     public func logEventLast() {
-      switch (engine.getLogEventLast()) {
+      switch (getEngine().getLogEventLast()) {
       case null { };
       case (?l) { logEventRec(render, l) }
       }
