@@ -5,8 +5,11 @@ import H "mo:base/hash";
 import L "mo:base/list";
 import R "mo:base/result";
 import P "mo:base/prelude";
-
+import Int "mo:base/Int";
 import Debug "mo:base/debug";
+
+import Render "mo:redraw/Render";
+
 
 /* # Example of using Adapton functor (modules A and E imported above). */
 
@@ -14,7 +17,6 @@ import Debug "mo:base/debug";
       Define four types (see *'s below), and operations: */
 module {
 public type Name = Text; // *
-
 public type Val = Int; // *
 
 public type Error = { // *
@@ -172,6 +174,29 @@ public class Calc() {
        }
      },
      true);
+    // to do: draw things
+    engine.renderOps := ?{
+      name = func (r:Render.TextRender, t:Text) {
+        r.textFg(t, #closed((255, 100, 255)))
+      };
+      val = func (r:Render.TextRender, i:Int) {
+        r.textFg(Int.toText(i), #closed((255, 255, 100)))
+      };
+      error = func (r:Render.TextRender, e:Error) {
+        // to do
+      };
+      closure = func (r:Render.TextRender, e:Exp) {
+        let fill = #closed((255, 100, 100));
+        switch e {
+          case (#num n) { r.textFg("#num " # Int.toText(n), fill) };
+          case (#named (n, _)) { r.textFg("#named " # n, fill) };
+          case (#add _) { r.textFg("#add ...", fill) };
+          case (#sub _) { r.textFg("#sub ...", fill) };
+          case (#mul _) { r.textFg("#mul ...", fill) };
+          case (#div _) { r.textFg("#div ...", fill) };
+        };
+      };
+    };
     // not yet fully initialized (still need to do setClosureEval)
     engine
   };

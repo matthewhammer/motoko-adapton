@@ -1,6 +1,7 @@
 import R "mo:base/result";
 
 module {
+
   // Logs are tree-structured.
   public type LogEvent<Name, Val, Error, Closure> = {
     #put:      (Name, Val, [LogEvent<Name, Val, Error, Closure>]);
@@ -12,6 +13,8 @@ module {
     #cleanThunk:(Name, Bool, [LogEvent<Name, Val, Error, Closure>]);
     #evalThunk:(Name, R.Result<Val, Error>, [LogEvent<Name, Val, Error, Closure>])
   };
+
+  // A tag is the "head" of a log, without its internal structure.
   public type LogEventTag<Name, Val, Error, Closure> = {
     #put:      (Name, Val);
     #putThunk: (Name, Closure);
