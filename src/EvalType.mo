@@ -1,9 +1,9 @@
-import P "mo:base/prelude";
-import Buf "mo:base/buf";
-import Hash "mo:base/hash";
-import List "mo:base/list";
-import H "mo:base/hashMap";
-import L "mo:base/list";
+import P "mo:base/Prelude";
+import Buf "mo:base/Buf";
+import Hash "mo:base/Hash";
+import List "mo:base/List";
+import H "mo:base/HashMap";
+import L "mo:base/List";
 
 import Render "mo:redraw/Render";
 

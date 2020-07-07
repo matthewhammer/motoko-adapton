@@ -1,4 +1,4 @@
-import R "mo:base/result";
+import R "mo:base/Result";
 
 module {
 
