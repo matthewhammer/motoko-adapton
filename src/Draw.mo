@@ -145,55 +145,66 @@ module {
     func logEventRec(render:Render.Render, l:G.LogEvent<Name, Val, Error, Closure>) {
       render.begin(#flow(vert()));
       logEventTag(render, getEngine().logEventTag(l));
-      { // indent body
-        render.begin(#flow(horz()));
-        text(" ", taFill(#closed(0, 0, 0)));
-        logEventBody(render, getEngine().logEventBody(l));
-        render.end();
+      { let body = getEngine().logEventBody(l);
+        if (body.size() == 0) { } else {
+          render.begin(#flow(horz()));
+          text(" ", taFill(#closed(0, 0, 0)));
+          render.begin(#flow(vert()));
+          render.fill(#open((255, 255, 255), 1));
+          logEventBody(render, body);
+          render.end();
+          render.end();
+        }
       };
       render.end();
     };
 
     func logEventTag(render:Render.Render, tag:G.LogEventTag<Name, Val, Error, Closure>) {
       render.begin(#flow(horz()));
-      let ta = taFill(#closed(255, 255, 255));
+      let taHi = taFill(#closed(255, 255, 255));
+      let taLo = taFill(#closed(100, 100, 100));
+      let taEval = taFill(#closed(100, 255, 100));
       switch tag {
       case (#put(_name, _val)) {
-             text("put", ta);
+             text("put ", taLo);
              name(_name);
+             text(" := ", taHi);
              val(_val);
            };
       case (#putThunk(_name, _clos)) {
-             text("putThunk", ta);
+             text("put ", taLo);
              name(_name);
+             text(" := ", taHi);
              closure(_clos);
            };
       case (#get(_name, _res)) {
-             text("get", ta);
+             text("get ", taLo);
              name(_name);
+             text(" => ", taHi);
              result(_res);
            };
       case (#dirtyIncomingTo(_name)) {
-             text("dirtyIncomingTo", ta);
+             text("dirtyIncomingTo", taHi);
              name(_name);
            };
       case (#dirtyEdgeFrom(_name)) {
-             text("dirtyEdgeFrom", ta);
+             text("dirtyEdgeFrom", taHi);
              name(_name);
            };
       case (#cleanEdgeTo(_name, _flag)) {
-             text("cleanEdgeTo", ta);
+             text("cleanEdgeTo", taHi);
              name(_name);
              flag(_flag);
           };
       case (#cleanThunk(_name, _flag)) {
-             text("cleanThunk", ta);
+             text("cleanThunk", taHi);
              name(_name);
              flag(_flag);
            };
       case (#evalThunk(_name, _res)) {
-             text("evalThunk", ta);
+             text("eval ", taEval);
              name(_name);
+             text(" => ", taHi);
              result(_res);
            };
       };

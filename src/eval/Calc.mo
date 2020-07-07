@@ -1,13 +1,13 @@
 import A "../Adapton";
 import E "../EvalType";
 
-import H "mo:base/hash";
-import L "mo:base/list";
-import R "mo:base/result";
-import P "mo:base/prelude";
+import H "mo:base/Hash";
+import L "mo:base/List";
+import R "mo:base/Result";
+import P "mo:base/Prelude";
 import Int "mo:base/Int";
-import Debug "mo:base/debug";
-
+import Debug "mo:base/Debug";
+import Text "mo:base/Text";
 import Render "mo:redraw/Render";
 
 
@@ -117,7 +117,7 @@ public class Calc() {
            case (#ok(n)) {
                   // (b) get demands the evaluation result of put Thunk
                   switch (engine.get(n)) {
-                  case (#ok(res)) { res };
+                  case (#ok(res)) { res }; // temp
                   case (#err(_)) { P.unreachable() };
                   }
                 };
@@ -168,7 +168,7 @@ public class Calc() {
        valEq=func (x:Int, y:Int) : Bool { x == y };
        errorEq=_errorEq;
        closureEq=expEq;
-       nameHash=H.hashOfText;
+       nameHash=Text.hash;
        cyclicDependency=func (stack:L.List<Name>, name:Name) : Error {
          assert false; loop { }
        }
@@ -185,17 +185,45 @@ public class Calc() {
       error = func (r:Render.TextRender, e:Error) {
         // to do
       };
-      closure = func (r:Render.TextRender, e:Exp) {
-        let fill = #closed((255, 100, 100));
-        switch e {
-          case (#num n) { r.textFg("#num " # Int.toText(n), fill) };
-          case (#named (n, _)) { r.textFg("#named " # n, fill) };
-          case (#add _) { r.textFg("#add ...", fill) };
-          case (#sub _) { r.textFg("#sub ...", fill) };
-          case (#mul _) { r.textFg("#mul ...", fill) };
-          case (#div _) { r.textFg("#div ...", fill) };
+      closure = func (tr:Render.TextRender, e:Exp) {
+        let r = tr.charRender.render;
+        let tFill = #closed((120, 120, 0));
+        let flow0 = { intraPad=0; interPad=0; dir=#right };
+        let flow1 = { intraPad=1; interPad=1; dir=#right };
+        let flow2 = { intraPad=2; interPad=2; dir=#right };
+        func rec(e:Exp) {
+          r.begin(#flow(flow2));
+          r.fill(#open((100, 100, 0), 1));
+          r.begin(#flow(flow1));
+          r.fill(#open((0, 0, 0), 1));
+          r.begin(#flow(flow0));
+          r.fill(#closed((0, 0, 0)));
+          exp(e);
+          r.end();
+          r.end();
+          r.end()
         };
-      };
+        func exp(e:Exp) {
+          switch e {
+          case (#named (n, e)) {
+                 r.begin(#flow(flow2));
+                 r.fill(#closed((100, 100, 0)));
+                 tr.textBg(
+                   n,
+                   #closed((0,0,0)),
+                   #closed((100, 100, 0)));
+                 rec(e);
+                 r.end();
+               };
+          case (#num n) { tr.textFg(Int.toText(n), tFill) };
+          case (#add(e1,e2)) { rec(e1); tr.textFg("+", tFill); rec(e2) };
+          case (#sub(e1,e2)) { rec(e1); tr.textFg("-", tFill); rec(e2) };
+          case (#mul(e1,e2)) { rec(e1); tr.textFg("*", tFill); rec(e2) };
+          case (#div(e1,e2)) { rec(e1); tr.textFg("/", tFill); rec(e2) };
+          };
+        };
+        rec(e)
+      }
     };
     // not yet fully initialized (still need to do setClosureEval)
     engine
