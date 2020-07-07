@@ -186,7 +186,7 @@ module {
 
     public func logEventsEq (e1:[G.LogEvent<Name, Val, Error, Closure>],
                              e2:[G.LogEvent<Name, Val, Error, Closure>]) : Bool {
-      if (e1.len() == e2.len()) {
+      if (e1.size() == e2.size()) {
         for (i in e1.keys()) {
           if (logEventEq(e1[i], e2[i])) {
             /* continue */
@@ -242,8 +242,8 @@ module {
     };
 
     public func getLogEventLast() : ?G.LogEvent<Name, Val, Error, Closure> {
-      if (context.logBuf.len() > 0) {
-        ?context.logBuf.get(context.logBuf.len() - 1)
+      if (context.logBuf.size() > 0) {
+        ?context.logBuf.get(context.logBuf.size() - 1)
       } else {
         null
       }
@@ -251,7 +251,7 @@ module {
 
     // assert last log event
     public func assertLogEventLast(expected:G.LogEvent<Name, Val, Error, Closure>) {
-      let logLen = context.logBuf.len();
+      let logLen = context.logBuf.size();
       if (logLen > 0) {
         let actual = context.logBuf.get(logLen - 1);
         assert logEventEq(actual, expected)
@@ -331,7 +331,7 @@ module {
       case (?#thunk(thunkNode)) {
              switch (thunkNode.result) {
              case null {
-                    assert (thunkNode.incoming.len() == 0);
+                    assert (thunkNode.incoming.size() == 0);
                     let res = evalThunk(c, name, thunkNode);
                     endLogEvent(c, #get(name, res));
                     addEdge(c, name, #get(res));
