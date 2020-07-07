@@ -3,8 +3,14 @@ import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
 
 actor {
+
+
+  public func windowSizeChange(d:Render.Dim) : async Render.Result { redraw(d) };
+
+  public func test() : async Render.Result { redraw({width=384; height=384;}) };
+
   // for client side, see https://github.com/matthewhammer/ic-game-terminal
-  public func windowSizeChange(_dim:Render.Dim) : async Render.Result {
+  func redraw(_dim:Render.Dim) : Render.Result {
     // to do -- use dim
 
     // test the Calc definition imported above:

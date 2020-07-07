@@ -10,4 +10,4 @@ echo
 dfx start --background
 dfx build
 dfx canister install --all
-dfx canister call Calc windowSizeChange '(384, 384)'
+dfx canister call Calc test '()'
