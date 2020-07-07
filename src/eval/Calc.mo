@@ -7,7 +7,7 @@ import R "mo:base/Result";
 import P "mo:base/Prelude";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
-
+import Text "mo:base/Text";
 import Render "mo:redraw/Render";
 
 
@@ -168,7 +168,7 @@ public class Calc() {
        valEq=func (x:Int, y:Int) : Bool { x == y };
        errorEq=_errorEq;
        closureEq=expEq;
-       nameHash=H.hashOfText;
+       nameHash=Text.hash;
        cyclicDependency=func (stack:L.List<Name>, name:Name) : Error {
          assert false; loop { }
        }

@@ -273,7 +273,7 @@ module {
         incoming=newEdgeBuf();
         content=val;
       };
-      switch (c.store.swap(name, #ref(newRefNode))) {
+      switch (c.store.replace(name, #ref(newRefNode))) {
       case null { /* no prior node of this name */ };
       case (?#thunk(oldThunk)) { dirtyThunk(c, name, oldThunk) };
       case (?#ref(oldRef)) {
@@ -299,7 +299,7 @@ module {
         result=null;
         closure=cl;
       };
-      switch (c.store.swap(name, #thunk(newThunkNode))) {
+      switch (c.store.replace(name, #thunk(newThunkNode))) {
       case null { /* no prior node of this name */ };
       case (?#thunk(oldThunk)) {
              if (evalOps.closureEq(oldThunk.closure, cl)) {
@@ -383,7 +383,7 @@ module {
       case null { P.unreachable() };
       case (?targetNode) {
              let edgeBuf = incomingEdgeBuf(targetNode);
-             for (existing in edgeBuf.iter()) {
+             for (existing in edgeBuf.vals()) {
                // same edge means same source and action tag; return early.
                if (evalOps.nameEq(edge.dependent,
                                   existing.dependent)) {
@@ -407,7 +407,7 @@ module {
              let nodeIncoming = incomingEdgeBuf(node);
              let newIncoming : G.EdgeBuf<Name, Val, Error, Closure> =
                Buf.Buf<G.Edge<Name, Val, Error, Closure>>(0);
-             for (incomingEdge in nodeIncoming.iter()) {
+             for (incomingEdge in nodeIncoming.vals()) {
                if (evalOps.nameEq(edge.dependent,
                                  incomingEdge.dependent)) {
                  // same source, so filter otherEdge out.
@@ -475,7 +475,7 @@ module {
         // #err(#archivistNameOveruse(c.stack, n))
         assert false
       };
-      for (edge in thunkNode.incoming.iter()) {
+      for (edge in thunkNode.incoming.vals()) {
         dirtyEdge(c, edge)
       };
       endLogEvent(c, #dirtyIncomingTo(n));
@@ -483,7 +483,7 @@ module {
 
     func dirtyRef(c:G.Context<Name, Val, Error, Closure>, n:Name, refNode:G.Ref<Name, Val, Error, Closure>) {
       beginLogEvent(c);
-      for (edge in refNode.incoming.iter()) {
+      for (edge in refNode.incoming.vals()) {
         dirtyEdge(c, edge)
       };
       endLogEvent(c, #dirtyIncomingTo(n));
@@ -568,7 +568,7 @@ module {
     };
 
     func stackContainsNodeName(s:G.Stack<Name>, nodeName:Name) : Bool {
-      L.exists<Name>(s, func (n:Name) : Bool { evalOps.nameEq(n, nodeName) })
+      L.some<Name>(s, func (n:Name) : Bool { evalOps.nameEq(n, nodeName) })
     };
 
     func evalThunk
@@ -603,7 +603,7 @@ module {
         outgoing=edges;
         incoming=newEdgeBuf();
       };
-      c.store.set(nodeName, #thunk(newNode));
+      c.store.put(nodeName, #thunk(newNode));
       addBackEdges(c, newNode.outgoing);
       endLogEvent(c, #evalThunk(nodeName, res));
       res
