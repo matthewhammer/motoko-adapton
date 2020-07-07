@@ -146,7 +146,7 @@ module {
       render.begin(#flow(vert()));
       logEventTag(render, getEngine().logEventTag(l));
       { let body = getEngine().logEventBody(l);
-        if (body.len() == 0) { } else {
+        if (body.size() == 0) { } else {
           render.begin(#flow(horz()));
           text(" ", taFill(#closed(0, 0, 0)));
           render.begin(#flow(vert()));
