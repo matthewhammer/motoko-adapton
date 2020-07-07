@@ -1,12 +1,12 @@
 import A "../Adapton";
 import E "../EvalType";
 
-import H "mo:base/hash";
-import L "mo:base/list";
-import R "mo:base/result";
-import P "mo:base/prelude";
+import H "mo:base/Hash";
+import L "mo:base/List";
+import R "mo:base/Result";
+import P "mo:base/Prelude";
 import Int "mo:base/Int";
-import Debug "mo:base/debug";
+import Debug "mo:base/Debug";
 
 import Render "mo:redraw/Render";
 

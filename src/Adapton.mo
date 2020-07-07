@@ -95,12 +95,12 @@ respectively.
 
 */
 
-import H "mo:base/hashMap";
-import Hash "mo:base/hash";
-import Buf "mo:base/buf";
-import L "mo:base/list";
-import R "mo:base/result";
-import P "mo:base/prelude";
+import H "mo:base/HashMap";
+import Hash "mo:base/Hash";
+import Buf "mo:base/Buf";
+import L "mo:base/List";
+import R "mo:base/Result";
+import P "mo:base/Prelude";
 
 import E "EvalType";
 import G "GraphType";
