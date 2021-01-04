@@ -1,13 +1,13 @@
-echo PATH = $PATH
-echo vessel @ `which vessel`
+#!/bin/bash
+VERSION=`cat .DFX_VERSION`
+export PATH=~/.cache/dfinity/versions/$VERSION:`pwd`:$PATH
+dfx stop &&\
+dfx start --background --clean &&\
+dfx canister create Calc &&\
+dfx build Calc &&\
+dfx canister install Calc &&\
+dfx canister call Calc test2 '()'
 
-mkdir -p .vessel/base/b296b63b33e5f52a540311a342e16934867c3f5a && ln -s $(dfx cache show)/base .vessel/base/b296b63b33e5f52a540311a342e16934867c3f5a/src
-
-echo
-echo == Build
-echo
-
-dfx start --background
-dfx build
-dfx canister install --all
-dfx canister call Calc test '()'
+echo "BEGIN PROBLEMATIC TEST (might hang now?)"
+dfx canister call Calc test '()' --output raw
+echo DONE

@@ -1,6 +1,6 @@
 import H "mo:base/HashMap";
 import Hash "mo:base/Hash";
-import Buf "mo:base/Buf";
+import Buffer "mo:base/Buffer";
 import L "mo:base/List";
 import R "mo:base/Result";
 import P "mo:base/Prelude";
@@ -23,7 +23,7 @@ module {
   };
 
   public type Stack<Name> = L.List<Name>;
-  public type EdgeBuf<Name, Val, Error, Closure> = Buf.Buf<Edge<Name, Val, Error, Closure>>;
+  public type EdgeBuf<Name, Val, Error, Closure> = Buffer.Buffer<Edge<Name, Val, Error, Closure>>;
 
   public type Ref<Name, Val, Error, Closure> = {
     content: Val;
@@ -60,7 +60,7 @@ module {
     Log.LogEventTag<Name, Val, Error, Closure>;
 
   public type LogEventBuf<Name, Val, Error, Closure> =
-    Buf.Buf<LogEvent<Name, Val, Error, Closure>>;
+    Buffer.Buffer<LogEvent<Name, Val, Error, Closure>>;
 
   public type LogBufStack<Name, Val, Error, Closure> =
     L.List<LogEventBuf<Name, Val, Error, Closure>>;

@@ -1,5 +1,5 @@
 import P "mo:base/Prelude";
-import Buf "mo:base/Buf";
+import Buffer "mo:base/Buffer";
 import Hash "mo:base/Hash";
 import List "mo:base/List";
 import H "mo:base/HashMap";

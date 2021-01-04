@@ -97,7 +97,7 @@ respectively.
 
 import H "mo:base/HashMap";
 import Hash "mo:base/Hash";
-import Buf "mo:base/Buf";
+import Buffer "mo:base/Buffer";
 import L "mo:base/List";
 import R "mo:base/Result";
 import P "mo:base/Prelude";
@@ -119,7 +119,7 @@ module {
         var agent = (#editor : {#editor; #archivist});
 
         var edges : G.EdgeBuf<Name, Val, Error, Closure> =
-          Buf.Buf<G.Edge<Name, Val, Error, Closure>>(0);
+          Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(0);
 
         var stack : G.Stack<Name> = null;
 
@@ -129,7 +129,7 @@ module {
         var logFlag = _logFlag;
 
         var logBuf : G.LogEventBuf<Name, Val, Error, Closure> =
-          Buf.Buf<G.LogEvent<Name, Val, Error, Closure>>(0);
+          Buffer.Buffer<G.LogEvent<Name, Val, Error, Closure>>(0);
 
         var logStack : G.LogBufStack<Name, Val, Error, Closure> = null;
         evalOps = _evalOps;
@@ -406,7 +406,7 @@ module {
       case (?node) {
              let nodeIncoming = incomingEdgeBuf(node);
              let newIncoming : G.EdgeBuf<Name, Val, Error, Closure> =
-               Buf.Buf<G.Edge<Name, Val, Error, Closure>>(0);
+               Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(0);
              for (incomingEdge in nodeIncoming.vals()) {
                if (evalOps.nameEq(edge.dependent,
                                  incomingEdge.dependent)) {
@@ -450,7 +450,7 @@ module {
       };
     };
 
-    func newEdgeBuf() : G.EdgeBuf<Name, Val, Error, Closure> { Buf.Buf<G.Edge<Name, Val, Error, Closure>>(03) };
+    func newEdgeBuf() : G.EdgeBuf<Name, Val, Error, Closure> { Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(03) };
 
     func thunkIsDirty(t:G.Thunk<Name, Val, Error, Closure>) : Bool {
       for (i in t.outgoing.keys()) {
@@ -586,7 +586,7 @@ module {
         return #err(evalOps.cyclicDependency(oldStack, nodeName))
       };
       c.agent := #archivist;
-      c.edges := Buf.Buf(0);
+      c.edges := Buffer.Buffer(0);
       c.stack := ?(nodeName, oldStack);
       remBackEdges(c, thunkNode.outgoing);
       let res = switch (c.evalClosure) {
@@ -616,7 +616,7 @@ module {
     {
       if (c.logFlag) {
         c.logStack := ?(c.logBuf, c.logStack);
-        c.logBuf := Buf.Buf<G.LogEvent<Name, Val, Error, Closure>>(03);
+        c.logBuf := Buffer.Buffer<G.LogEvent<Name, Val, Error, Closure>>(03);
       }
     };
 
