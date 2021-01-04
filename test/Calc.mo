@@ -4,6 +4,10 @@ import Debug "mo:base/Debug";
 
 actor {
 
+  public func test2() : async Nat {
+    2
+  };
+
   public func test() : async Render.Result {
     let r = redraw({width=384; height=384;});
     Debug.print "almost done";
