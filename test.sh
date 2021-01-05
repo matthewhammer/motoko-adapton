@@ -6,6 +6,5 @@ dfx start --background --clean &&\
 dfx canister create Calc &&\
 dfx build Calc &&\
 dfx canister install Calc &&\
-dfx canister call Calc test2 '()'
 dfx canister call Calc test '()' --output raw
 echo DONE
