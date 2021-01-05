@@ -101,10 +101,10 @@ public class Calc() {
              case (#ok((n1, n2))) {
                     switch (binOpOfExp(e)) {
                     case null { P.unreachable() };
-                    case (?#add) { #ok(n1 + n2) };
-                    case (?#mul) { #ok(n1 * n2) };
-                    case (?#sub) { #ok(n1 - n2) };
-                    case (?#div) { if (n2 == 0) { #err(#divByZero) } else #ok(n1 / n2) };
+                    case (?#add) #ok(n1 + n2) ;
+                    case (?#mul) #ok(n1 * n2);
+                    case (?#sub) #ok(n1 - n2);
+                    case (?#div) if (n2 == 0) { #err(#divByZero) } else #ok(n1 / n2);
                   }
                   }
            }
@@ -157,7 +157,7 @@ public class Calc() {
 
   /* -- cache implementation, via adapton package -- */
 
-  public var engine : A.Engine<Name, Val, Error, Exp> = {
+  public var engine : A.Engine<Name, Val, Error, Exp> = do {
     let _errorEq = errorEq;
     // Adapton functor step 1b:
     //   Apply the functor to the definitions of types and operations,
