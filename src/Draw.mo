@@ -70,7 +70,7 @@ module {
     func getEngine() : Engine<Name,Val,Error,Closure> =
       switch engine { case null P.unreachable(); case (?e) e; };
 
-    var render = {
+    var render = do {
       let r = Render.Render();
       r.begin(#flow(vert()));
       r
@@ -145,7 +145,7 @@ module {
     func logEventRec(render:Render.Render, l:G.LogEvent<Name, Val, Error, Closure>) {
       render.begin(#flow(vert()));
       logEventTag(render, getEngine().logEventTag(l));
-      { let body = getEngine().logEventBody(l);
+      do { let body = getEngine().logEventBody(l);
         if (body.size() == 0) { } else {
           render.begin(#flow(horz()));
           text(" ", taFill(#closed(0, 0, 0)));
@@ -227,7 +227,7 @@ module {
     public func getResult() : Render.Result {
       render.end();
       let res = render.getResult();
-      { // start the next rendering...
+      do { // start the next rendering...
         render := Render.Render();
         render.begin(#flow(vert()));
       };
