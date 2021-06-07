@@ -5,18 +5,35 @@ on:
       - master
   pull_request:
 jobs:
-  tests:
-    runs-on: ubuntu-18.04
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # environment variables to set for dfx
+    env:
+      DFX_VERSION: 0.7.0
     steps:
-    - uses: actions/checkout@v1
-    - name: "install dfx"
+    - uses: actions/checkout@v2
+    - name: Install
       run: |
-       wget --no-check-certificate https://sdk.dfinity.org/install.sh
-       yes Y | DFX_VERSION=0.6.16 sh install.sh
-       echo "/home/runner/bin" >> $GITHUB_PATH
-    - name: "dfx cache install"
-      run: dfx cache install
-    - name: "install vessel"
-      run: wget --output-document /home/runner/bin/vessel https://github.com/kritzcreek/vessel/releases/download/v0.4.1/vessel-linux64 && chmod +x /home/runner/bin/vessel
-    - name: "test"
-      run: ./test.sh
+        echo y | DFX_VERSION=$DFX_VERSION bash -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+        echo "/home/runner/bin" >> $GITHUB_PATH
+        ./scripts/vessel-install.sh
+        ./scripts/repl-install.sh
+
+    - name: Build
+      run: |
+        dfx cache install
+        # cp -f $HOME/bin/moc $HOME/.cache/dfinity/versions/$DFX_VERSION/moc
+        dfx start --background
+        dfx deploy --no-wallet Test
+    - name: Test
+      run: |
+        (for f in test/script/*.test.sh; do
+          echo "==== Run test $f ===="
+          dfx canister --no-wallet call Test reset '()'
+          ic-repl -r http://localhost:8000 "$f" || exit
+        done)
+    - name: stop dfx
+      run: |
+        echo "dfx stop"
+        dfx stop

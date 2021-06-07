@@ -3,9 +3,25 @@ import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
 
 actor {
+  var scriptTime : Int = 0;
 
-  public func test() : async Render.Result {
-    redraw({width=384; height=384;})
+  func timeNow_() : Int {
+    scriptTime
+  };
+
+  public shared(msg) func scriptTimeTick() : async ?() {
+    scriptTime := scriptTime + 1;
+    ?()
+  };
+
+  public shared(msg) func reset() : async ?() {
+    scriptTime := 0;
+    ?()
+  };
+
+
+  public func test() : async ?Render.Result {
+    ?redraw({width=384; height=384;})
   };
 
   // for client side, see https://github.com/matthewhammer/ic-game-terminal

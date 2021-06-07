@@ -4,3 +4,5 @@
 *.did
 moc
 vessel
+docs
+.dfx
