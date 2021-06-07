@@ -20,8 +20,8 @@ actor {
   };
 
 
-  public func test() : async Render.Result {
-    redraw({width=384; height=384;})
+  public func test() : async ?Render.Result {
+    ?redraw({width=384; height=384;})
   };
 
   // for client side, see https://github.com/matthewhammer/ic-game-terminal
