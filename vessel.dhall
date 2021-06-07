@@ -1,4 +1,4 @@
 {
-  dependencies = [ "base"],
+  dependencies = [ "base", "stand", "redraw"],
   compiler = None Text
 }
