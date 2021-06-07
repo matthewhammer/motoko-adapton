@@ -1,7 +1,6 @@
 import C "../src/eval/Calc";
 import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
-import Param "Param";
 
 actor {
   var scriptTime : Int = 0;
