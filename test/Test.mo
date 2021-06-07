@@ -1,57 +1,25 @@
 import C "../src/eval/Calc";
 import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
+import Param "Param";
 
 actor {
-
-  var timeMode : {#ic ; #script} =
-    switch (Param.timeMode) {
-     case (#ic) #ic;
-     case (#script _) #script
-    };
-
   var scriptTime : Int = 0;
 
   func timeNow_() : Int {
-    switch timeMode {
-      case (#ic) { Time.now() };
-      case (#script) { scriptTime };
-    }
+    scriptTime
   };
 
   public shared(msg) func scriptTimeTick() : async ?() {
-    do ? {
-      accessCheck(msg.caller, #admin, #all)!;
-      assert (timeMode == #script);
-      scriptTime := scriptTime + 1;
-    }
+    scriptTime := scriptTime + 1;
+    ?()
   };
 
-  func reset_( mode : { #ic ; #script : Int } ) {
-    setTimeMode_(mode);
-    state := State.empty({ admin = state.access.admin });
+  public shared(msg) func reset() : async ?() {
+    scriptTime := 0;
+    ?()
   };
 
-  public shared(msg) func reset( mode : { #ic ; #script : Int } ) : async ?() {
-    do ? {
-      accessCheck(msg.caller, #admin, #all)!;
-      reset_(mode)
-    }
-  };
-
-  func setTimeMode_( mode : { #ic ; #script : Int } ) {
-    switch mode {
-      case (#ic) { timeMode := #ic };
-      case (#script st) { timeMode := #script ; scriptTime := st };
-    }
-  };
-
-  public shared(msg) func setTimeMode( mode : { #ic ; #script : Int } ) : async ?() {
-    do ? {
-      accessCheck(msg.caller, #admin, #all)!;
-      setTimeMode_(mode)
-    }
-  };
 
   public func test() : async Render.Result {
     redraw({width=384; height=384;})

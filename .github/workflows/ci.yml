@@ -30,7 +30,7 @@ jobs:
       run: |
         (for f in test/service/*.test.sh; do
           echo "==== Run test $f ===="
-          dfx canister --no-wallet call Test reset 'variant { script = 0 }'
+          dfx canister --no-wallet call Test reset '()'
           ic-repl -r http://localhost:8000 "$f" || exit
         done)
     - name: stop dfx
