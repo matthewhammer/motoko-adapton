@@ -1,4 +1,4 @@
-import C "../src/eval/Calc";
+import Calc "Calc";
 import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
 
@@ -31,7 +31,7 @@ actor {
     Debug.print "Redraw begin";
 
     // test the Calc definition imported above:
-    let calc = C.Calc();
+    let calc = Calc.Calc();
 
     Debug.print "Calc() done.";
 
@@ -44,12 +44,15 @@ actor {
                            #named("d", #sub(#num(5), #named("e", #div(#num(4), #num(2)))))
                       ))));
 
-    calc.engine.draw().logEventLast();
+    // to do -- fix drawing architecture
+    //
+    //calc.engine.draw().logEventLast();
 
     // to do -- change the expression somehow
 
     let res = calc.eval(exp);
-    calc.engine.draw().logEventLast();
-    calc.engine.draw().getResult()
+    //calc.engine.draw().logEventLast();
+    //calc.engine.draw().getResult()
+    #ok(#redraw([]))
   };
 }

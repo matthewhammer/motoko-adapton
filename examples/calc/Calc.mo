@@ -1,5 +1,5 @@
-import A "../Adapton";
-import E "../EvalType";
+import A "../../src/Adapton";
+import E "../../src/EvalType";
 
 import H "mo:base/Hash";
 import L "mo:base/List";
@@ -174,8 +174,8 @@ public class Calc() {
        }
      },
      true);
-    // to do: draw things
-    engine.renderOps := ?{
+    // to do: draw things with this
+    let _renderOps = {
       name = func (r:Render.TextRender, t:Text) {
         r.textFg(t, #closed((255, 100, 255)))
       };
@@ -225,7 +225,9 @@ public class Calc() {
         rec(e)
       }
     };
-    // not yet fully initialized (still need to do setClosureEval)
+    // not yet fully initialized:
+    //  - still need to do setClosureEval
+    //  - TO DO -- and what about _renderOps (???)
     engine
   };
 

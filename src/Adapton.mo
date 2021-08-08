@@ -105,8 +105,6 @@ import P "mo:base/Prelude";
 import E "EvalType";
 import G "GraphType";
 
-import Draw "Draw";
-
 module {
   // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `EvalType` module
   public class Engine<Name, Val, Error, Closure>(evalOps:E.EvalOps<Name, Val, Error, Closure>, _logFlag:Bool) = Self {
@@ -145,7 +143,7 @@ module {
       }
     };
 
-    public var renderOps : ?E.RenderOps<Name, Val, Error, Closure> = null;
+    //public var renderOps : ?E.RenderOps<Name, Val, Error, Closure> = null;
 
     /* A distinguished context for the Main API */
 
@@ -166,15 +164,6 @@ module {
       = contextGet(context, n);
 
     /* Public utilities */
-
-    private var _draw : Draw.Draw<Name, Val, Error, Closure> =
-      Draw.Draw<Name, Val, Error, Closure>();
-
-    public func draw() : Draw.Draw<Name, Val, Error, Closure> {
-      // overcome cyclic reference between Draw and Engine classes
-      _draw.engine := ?Self;
-      _draw
-    };
 
     public func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {

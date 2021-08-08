@@ -1,12 +1,12 @@
 {
   "canisters": {
-    "Test": {
-      "main": "test/Test.mo"
+    "Calc": {
+      "main": "examples/calc/Calc.mo"
     }
   },
   "defaults": {
     "build": {
-      "packtool": "vessel sources",
+      "packtool": "vessel --package-set example-package-set.dhall sources",
       "output": "canisters/"
     },
     "start": {

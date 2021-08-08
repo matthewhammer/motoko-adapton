@@ -13,21 +13,16 @@ let
         , version = "dfx-0.7.0-beta.2"
         , dependencies = [] : List Text
         }
+      , { name = "stand"
+        , repo = "https://github.com/matthewhammer/motoko-stand/"
+        , version = "master"
+        , dependencies = [ "base" ]
+        }
+      , { name = "redraw"
+        , repo = "https://github.com/matthewhammer/motoko-redraw/"
+        , version = "master"
+        , dependencies = [ "base", "stand" ]
+        }
       ]
 
-let
-    {- This is where you can override existing packages in the package-set
-
-       For example, if you wanted to use version `v2.0.0` of the foo library:
-       let overrides = [
-           { name = "foo"
-           , version = "v2.0.0"
-           , repo = "https://github.com/bar/foo"
-           , dependencies = [] : List Text
-           }
-       ]
-    -}
-    overrides =
-      [] : List Package
-
-in  upstream # additions # overrides
+in  upstream # additions
