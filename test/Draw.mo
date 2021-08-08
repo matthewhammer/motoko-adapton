@@ -2,11 +2,18 @@ import Render "mo:redraw/Render";
 import Mono5x5 "mo:redraw/glyph/Mono5x5";
 
 import P "mo:base/Prelude";
-import E "EvalType";
-import G "GraphType";
+import E "../src/EvalType";
+import G "../src/GraphType";
 
 // Drawing utilities for the Adapton engine's log and graph structures
 module {
+
+  public type RenderOps<Name, Val, Error, Closure> = {
+    name:    (Render.TextRender, Name) -> ();
+    val:     (Render.TextRender, Val) -> ();
+    error:   (Render.TextRender, Error) -> ();
+    closure: (Render.TextRender, Closure) -> ();
+  };
 
   /* We break a potential object cycle by withholding
      the drawing object(s) that we define by the class below:
@@ -20,7 +27,7 @@ module {
       var context : G.Context<Name, Val, Error, Closure> ;
 
       // to do (minor): make "safer" via an accessor
-      var renderOps : ?E.RenderOps<Name, Val, Error, Closure> ;
+      var renderOps : ?RenderOps<Name, Val, Error, Closure> ;
 
       getLogEventLast() : ?G.LogEvent<Name, Val, Error, Closure> ;
       logEventBody : G.LogEvent<Name, Val, Error, Closure> -> [G.LogEvent<Name, Val, Error, Closure>];

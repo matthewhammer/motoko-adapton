@@ -6,7 +6,7 @@
   },
   "defaults": {
     "build": {
-      "packtool": "vessel sources",
+      "packtool": "vessel --package-set example-package-set.dhall sources",
       "output": "canisters/"
     },
     "start": {

@@ -66,12 +66,4 @@ public type EvalClosure<Val, Error, Closure> = {
   eval: Closure -> {#ok:Val; #err:Error};
 };
 
-// Optional 2D graphics: Specify how to render each type:
-public type RenderOps<Name, Val, Error, Closure> = {
-  name:    (Render.TextRender, Name) -> ();
-  val:     (Render.TextRender, Val) -> ();
-  error:   (Render.TextRender, Error) -> ();
-  closure: (Render.TextRender, Closure) -> ();
-};
-
 }
