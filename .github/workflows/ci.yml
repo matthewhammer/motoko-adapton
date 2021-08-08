@@ -34,13 +34,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: gh-pages
         FOLDER: docs/
-    - name: Test the test deployment
-      run: |
-        (for f in test/script/*.test.sh; do
-          echo "==== Run test $f ===="
-          dfx canister --no-wallet call Test reset '()'
-          ic-repl -r http://localhost:8000 "$f" || exit
-        done)
     - name: stop dfx
       run: |
         echo "dfx stop"

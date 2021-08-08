@@ -1,4 +1,4 @@
-import C "Eval/Calc";
+import Calc "Calc";
 import Render "mo:redraw/Render";
 import Debug "mo:base/Debug";
 
@@ -31,7 +31,7 @@ actor {
     Debug.print "Redraw begin";
 
     // test the Calc definition imported above:
-    let calc = C.Calc();
+    let calc = Calc.Calc();
 
     Debug.print "Calc() done.";
 

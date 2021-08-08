@@ -1,7 +1,7 @@
 {
   "canisters": {
-    "Test": {
-      "main": "test/Test.mo"
+    "Calc": {
+      "main": "examples/calc/Calc.mo"
     }
   },
   "defaults": {
