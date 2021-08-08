@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     # environment variables to set for dfx
     env:
-      DFX_VERSION: 0.7.0
+      DFX_VERSION: 0.7.2
     steps:
     - uses: actions/checkout@v2
     - name: Install
@@ -20,13 +20,21 @@ jobs:
         ./scripts/vessel-install.sh
         ./scripts/repl-install.sh
 
-    - name: Build
+    - name: Build and deploy
       run: |
+        set -x
         dfx cache install
-        # cp -f $HOME/bin/moc $HOME/.cache/dfinity/versions/$DFX_VERSION/moc
         dfx start --background
         dfx deploy --no-wallet Test
-    - name: Test
+    - name: Build docs
+      run: /home/runner/.cache/dfinity/versions/$DFX_VERSION/mo-doc
+    - name: Upload docs
+      uses: JamesIves/github-pages-deploy-action@releases/v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: docs/
+    - name: Test the test deployment
       run: |
         (for f in test/script/*.test.sh; do
           echo "==== Run test $f ===="
