@@ -1,5 +1,4 @@
-import A "../../src/Adapton";
-import E "../../src/EvalType";
+import Engine "../../src/Engine";
 
 import H "mo:base/Hash";
 import L "mo:base/List";
@@ -157,12 +156,12 @@ public class Calc() {
 
   /* -- cache implementation, via adapton package -- */
 
-  public var engine : A.Engine<Name, Val, Error, Exp> = do {
+  public var engine : Engine.Engine<Name, Val, Error, Exp> = do {
     let _errorEq = errorEq;
     // Adapton functor step 1b:
     //   Apply the functor to the definitions of types and operations,
     //   excluding the definition of evaluation itself (step 2).
-    let engine = A.Engine<Name, Val, Error, Exp>
+    let engine = Engine.Engine<Name, Val, Error, Exp>
     ({
        nameEq=func (x:Text, y:Text) : Bool { x == y };
        valEq=func (x:Int, y:Int) : Bool { x == y };

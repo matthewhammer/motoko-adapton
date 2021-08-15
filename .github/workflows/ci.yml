@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     # environment variables to set for dfx
     env:
-      DFX_VERSION: 0.7.2
+      DFX_VERSION: 0.8.0
     steps:
     - uses: actions/checkout@v2
     - name: Install
