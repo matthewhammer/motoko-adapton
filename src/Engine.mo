@@ -102,8 +102,8 @@ import L "mo:base/List";
 import R "mo:base/Result";
 import P "mo:base/Prelude";
 
-import E "EvalType";
-import G "GraphType";
+import E "types/Eval";
+import G "types/Graph";
 
 module {
   // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `EvalType` module
@@ -114,7 +114,7 @@ module {
     func init(_logFlag:Bool) : G.Context<Name, Val, Error, Closure> {
       let _evalOps = evalOps;
       {
-        var agent = (#editor : {#editor; #archivist});
+        var agent = (#editor : {#editor; #archivist}); // determined by by isEmpty(stack)
 
         var edges : G.EdgeBuf<Name, Val, Error, Closure> =
           Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(0);
@@ -123,6 +123,8 @@ module {
 
         var store : G.Store<Name, Val, Error, Closure> =
           H.HashMap<Name, G.Node<Name, Val, Error, Closure>>(03, _evalOps.nameEq, _evalOps.nameHash);
+
+        // --- Logging state:
 
         var logFlag = _logFlag;
 

@@ -5,8 +5,8 @@ import L "mo:base/List";
 import R "mo:base/Result";
 import P "mo:base/Prelude";
 
-import E "EvalType";
-import Log "LogType";
+import E "Eval";
+import Log "Log";
 
 module {
 
