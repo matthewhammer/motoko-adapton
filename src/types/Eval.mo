@@ -1,3 +1,6 @@
+/**
+ Evaluation definitions for engine.
+*/
 import P "mo:base/Prelude";
 import Buffer "mo:base/Buffer";
 import Hash "mo:base/Hash";
@@ -7,7 +10,6 @@ import L "mo:base/List";
 
 import Render "mo:redraw/Render";
 
-// Types defined by the interpreter client using Adapton:
 module {
 
 /*
