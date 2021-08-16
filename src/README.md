@@ -1,7 +1,9 @@
 # Adapton in Motoko, as a class-based generic "functor"
 
-This module defines a general-purpose cache and dependence graph
-system.  See `EvalType` module for details about its parameters.
+The `Engine` module defines a general-purpose cache and dependence graph
+system by closely following ideas from the research project [`Adapton`](http://adapton.org).
+
+See `types/Eval` module for details about DSL evaluation within the `Engine`.
 
 In brief, the client of this API chooses 4 representations
 for a customized incremental interpter that they define:
