@@ -1,3 +1,6 @@
+/**
+ Structured logs of adapton effects.
+*/
 import G "types/Graph";
 import E "types/Eval";
 import Log "types/Log";

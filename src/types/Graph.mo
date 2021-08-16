@@ -1,3 +1,6 @@
+/**
+ Representation of engine state.
+*/
 import H "mo:base/HashMap";
 import Hash "mo:base/Hash";
 import Buffer "mo:base/Buffer";

@@ -1,3 +1,6 @@
+/**
+ Structured logs of adapton effects.
+*/
 import R "mo:base/Result";
 
 module {
