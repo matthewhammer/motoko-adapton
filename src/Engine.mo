@@ -143,19 +143,22 @@ module {
       }
     };
 
-    var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
-
+    /// put a value with name
     public func put(n:Name, val:Val)
       : R.Result<Name, G.PutError>
       = put_(context, n, val);
 
+    /// put a thunk with name
     public func putThunk(n:Name, clos:Closure)
       : R.Result<Name, G.PutError>
       = putThunk_(context, n, clos);
 
+    /// get a named value, possibly by evaluating thunks, if needed.
     public func get(n:Name)
       : R.Result<{#ok:Val; #err:Error}, G.GetError>
       = get_(context, n);
+
+    var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
 
 
 
