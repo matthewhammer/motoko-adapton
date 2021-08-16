@@ -5,6 +5,12 @@ import R "mo:base/Result";
 
 module {
 
+  public type LogOps<Name, Val, Error, Closure> = {
+    begin : () -> ();
+    end : LogEventTag<Name, Val, Error, Closure> -> ();
+    take : () -> [LogEvent<Name, Val, Error, Closure>];
+  };
+
   // Logs are tree-structured.
   public type LogEvent<Name, Val, Error, Closure> = {
     #put:      (Name, Val, [LogEvent<Name, Val, Error, Closure>]);

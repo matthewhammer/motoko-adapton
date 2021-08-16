@@ -21,15 +21,17 @@ public type Error = { // *
   #divByZero;
   #unimplemented;
   #putError : Name;
+  #getError : Name;
 };
 
 public type Exp = { // *
+  #alloc: (Name, Exp); // reduces to #thunk case *before* evaluation, to permit fine-grained changes
   #num: Int;
   #add: (Exp, Exp);
   #sub: (Exp, Exp);
   #mul: (Exp, Exp);
   #div: (Exp, Exp);
-  #named: (Name, Exp); // record a cached result at Name
+  #thunk: Name;
 };
 
 // simple integer-based calculator, with incremental caching
@@ -68,7 +70,27 @@ public class Calc() {
       // Now the the calculator is ready for (incremental) evaluation!
       init := true;
     };
-   evalRec(e)
+    let e_ = alloc(e);
+    evalRec(e_)
+  };
+
+  // Allocate the AST into the Engine, so that #ref AST nodes are used in place of #named nodes.
+  // Later, we can do fine-grained changes, using just those names.
+  public func alloc(e : Exp) : Exp {
+    switch e {
+      case (#num(n)) { #num(n) };
+      case (#thunk(n)) { #thunk((n)) };
+      case (#add(e1, e2)) { #add(alloc e1, alloc e2) };
+      case (#sub(e1, e2)) { #sub(alloc e1, alloc e2) };
+      case (#mul(e1, e2)) { #mul(alloc e1, alloc e2) };
+      case (#div(e1, e2)) { #div(alloc e1, alloc e2) };
+      case (#alloc(n, e)) {
+        switch (engine.putThunk(n, alloc(e))) {
+        case (#err(err)) { loop { assert false } };
+        case (#ok(n)) { #thunk(n) };
+        }
+      }
+    }
   };
 
   // Adapton engine step 2:
@@ -84,7 +106,7 @@ public class Calc() {
              case (#err(e)) #err(e);
              case (#ok((n1, n2))) {
                     switch (binOpOfExp(e)) {
-                    case null { P.unreachable() };
+                    case null { loop { assert false } };
                     case (?#add) #ok(n1 + n2) ;
                     case (?#mul) #ok(n1 * n2);
                     case (?#sub) #ok(n1 - n2);
@@ -93,18 +115,11 @@ public class Calc() {
                   }
            }
          };
-    case (#named(n, e)) {
-           // Engine helps via cache steps (a) and (b):
-           //   (a) put Thunk within the cache at given name
-           switch (engine.putThunk(n, e)) {
-           case (#err(_)) { #err(#putError(n)) }; // e.g., non-unique name in AST
-           case (#ok(n)) {
-                  // (b) get demands the evaluation result of put Thunk
-                  switch (engine.get(n)) {
-                  case (#ok(res)) { res }; // temp
-                  case (#err(_)) { P.unreachable() };
-                  }
-                };
+    case (#alloc(n, e)) { loop { assert false }  };
+    case (#thunk(n)) {
+           switch (engine.get(n)) {
+           case (#ok(res)) { res }; // temp
+           case (#err(_)) { #err(#getError(n)) };
            }
          };
     }
@@ -130,7 +145,7 @@ public class Calc() {
       case (#sub(e1, e2)) { doit(e1, e2) };
       case (#div(e1, e2)) { doit(e1, e2) };
       case (#mul(e1, e2)) { doit(e1, e2) };
-      case _ { P.unreachable() };
+      case _ { loop { assert false } };
     }
   };
 

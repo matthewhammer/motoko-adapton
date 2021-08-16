@@ -11,6 +11,7 @@ import P "mo:base/Prelude";
 
 import E "types/Eval";
 import G "types/Graph";
+import Lg "types/Log";
 import Log "Log";
 
 module {
@@ -37,7 +38,7 @@ module {
         evalOps = _evalOps;
         var evalClosure = (null : ?E.EvalClosure<Val, Error, Closure>);
 
-        var logOps : G.LogOps<Name, Val, Error, Closure>
+        var logOps : Lg.LogOps<Name, Val, Error, Closure>
           = Log.Logger<Name, Val, Error, Closure>(evalOps, _logFlag);
       }
     };
@@ -65,19 +66,23 @@ module {
       : R.Result<{#ok:Val; #err:Error}, G.GetError>
       = get_(context, n);
 
+    /// take the log events (always empty when log is off)
+    public func takeLog() : [ Lg.LogEvent<Name, Val, Error, Closure> ] {
+      context.logOps.take()
+    };
+
     var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
 
 
-
     func logBegin
-      (c:G.Context<Name, Val, Error, Closure>)
+      (c : G.Context<Name, Val, Error, Closure>)
     {
       c.logOps.begin()
     };
 
     func logEnd
-      (c:G.Context<Name, Val, Error, Closure>,
-       tag:G.LogEventTag<Name, Val, Error, Closure>)
+      (c : G.Context<Name, Val, Error, Closure>,
+       tag : Lg.LogEventTag<Name, Val, Error, Closure>)
     {
       c.logOps.end(tag)
     };
@@ -122,6 +127,7 @@ module {
              if (evalOps.closureEq(oldThunk.closure, cl)) {
                // matching closures ==> no dirtying.
              } else {
+               newThunkNode.incoming.append(oldThunk.incoming);
                dirtyThunk(c, name, oldThunk)
              }
            };
@@ -352,21 +358,25 @@ module {
                } else { false }
              };
         case (#get(oldRes), ?#thunk(thunkNode)) {
-               let oldRes = switch (thunkNode.result) {
-               case (?res) { res };
-               case null { P.unreachable() };
+               switch (thunkNode.result) {
+                 case null {
+                   /* no cached result ==> cannot clean. */
+                   false
+                 };
+                 case (?res) {
+                   // dirty flag true ==> we must re-evaluate thunk:
+                   let newRes = evalThunk(c, e.dependency, thunkNode);
+                   if (resultEq(oldRes, newRes)) {
+                     e.dirtyFlag := false;
+                     true // equal results ==> clean.
+                   } else {
+                     false // changed result ==> thunk could not be cleaned.
+                   }
                };
-               // dirty flag true ==> we must re-evaluate thunk:
-               let newRes = evalThunk(c, e.dependency, thunkNode);
-               if (resultEq(oldRes, newRes)) {
-                 e.dirtyFlag := false;
-                 true // equal results ==> clean.
-               } else {
-                 false // changed result ==> thunk could not be cleaned.
-               }
-             };
+             }
+           };
         case (_, _) {
-               P.unreachable()
+               loop { assert false }
              };
         }
       } else {

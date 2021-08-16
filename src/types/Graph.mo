@@ -53,23 +53,15 @@ module {
     #get:R.Result<Val, Error>;
   };
 
-  public type LogOps<Name, Val, Error, Closure> = {
-    begin : () -> ();
-    end : LogEventTag<Name, Val, Error, Closure> -> ();
-  };
-
   public type PutError = (); // to do
   public type GetError = (); // to do
-
-  public type LogEventTag<Name, Val, Error, Closure> =
-    Log.LogEventTag<Name, Val, Error, Closure>;
 
   public type Context<Name, Val, Error, Closure> = {
     var agent: {#editor; #archivist};
     var edges: EdgeBuf<Name, Val, Error, Closure>;
     var stack: Stack<Name>;
     var store: Store<Name, Val, Error, Closure>;
-    var logOps : LogOps<Name, Val, Error, Closure>;
+    var logOps : Log.LogOps<Name, Val, Error, Closure>;
     // defined and supplied by the client:
     evalOps: E.EvalOps<Name, Val, Error, Closure>;
     var evalClosure: ?E.EvalClosure<Val, Error, Closure>;
