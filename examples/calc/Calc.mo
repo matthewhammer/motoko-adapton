@@ -62,7 +62,7 @@ public class Calc() {
 
   public func eval(e:Exp) : R.Result<Val, Error> {
     if (not init) {
-      // Adapton functor step 3:
+      // Adapton engine step 3:
       //   initialize engine with evaluation function.
       engine.setEvalClosure({eval=evalRec});
       // Now the the calculator is ready for (incremental) evaluation!
@@ -71,7 +71,7 @@ public class Calc() {
    evalRec(e)
   };
 
-  // Adapton functor step 2:
+  // Adapton engine step 2:
   //    Using engine as a cache, define a custom evaluation function for DSL:
   func evalRec(e:Exp) : R.Result<Val, Error> {
     switch e {
@@ -138,8 +138,8 @@ public class Calc() {
 
   public var engine : Engine.Engine<Name, Val, Error, Exp> = do {
     let _errorEq = errorEq;
-    // Adapton functor step 1b:
-    //   Apply the functor to the definitions of types and operations,
+    // Adapton engine step 1b:
+    //   Apply the engine to the definitions of types and operations,
     //   excluding the definition of evaluation itself (step 2).
     let engine = Engine.Engine<Name, Val, Error, Exp>
     ({
