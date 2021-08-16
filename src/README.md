@@ -3,9 +3,9 @@
 The `Engine` module defines a general-purpose cache and dependence graph
 system by closely following ideas from the research project [`Adapton`](http://adapton.org).
 
-See `types/Eval` module for details about DSL evaluation within the `Engine`.
+See [`types/Eval`](http://matthewhammer.org/motoko-adapton/types/Eval.html) module for details about DSL evaluation within the [`Engine`](http://matthewhammer.org/motoko-adapton/Engine.html).
 
-In brief, the client of this API chooses 4 representations
+In brief, the client of this API chooses [4 representations](http://matthewhammer.org/motoko-adapton/types/Eval.html#type.EvalOps)
 for a customized incremental interpter that they define:
 
  - `Name` -- the identity of cached information; must be unique.
@@ -15,7 +15,7 @@ for a customized incremental interpter that they define:
 
 ## Cache operations
 
-Using the types chosen above, the Engine exposes three important cache operations:
+Using the types chosen above, the [Engine](http://matthewhammer.org/motoko-adapton/Engine.html#type.Engine) exposes three important cache operations:
 
  - `put` a Value into a Ref, located at a Name.
 
@@ -44,7 +44,7 @@ The algorithms in this module are only used by Adapton, not
 externally.  They permit the main API (put, putThunk, get) to dirty
 and clean edges while enforcing certain invariants, given below.
 
-### Graph definitions:
+### [Graph definitions:](http://matthewhammer.org/motoko-adapton/types/Graph.html)
 
 - Each node is either a ref node or a thunk node.
 
@@ -61,7 +61,7 @@ and clean edges while enforcing certain invariants, given below.
   changes to a "new" value, distinct from at least _some_ past recorded
   action on this dirty edge.
 
-### Clean/dirty invariant
+#### Clean/dirty invariant
 
 The clean/dirty invariant for each edge is a global one, over the
 status of the entire graph:
@@ -81,7 +81,7 @@ transitive closure of edges that forms by following the dependent
 direction of each edge, or dependency direction of each edge,
 respectively.
 
-### Further discussion
+#### Further discussion
 
 - All node identities used here are determined by explicit, user-provided names.
 
