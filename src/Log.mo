@@ -42,7 +42,7 @@ module {
       }
     };
 
-    public func end(tag : G.LogEventTag<Name, Val, Error, Closure>)
+    public func end(tag : Log.LogEventTag<Name, Val, Error, Closure>)
     {
       if (logFlag) {
         switch (logStack) {
@@ -58,10 +58,18 @@ module {
       }
     };
 
+    public func take() : [LogEvent<Name, Val, Error, Closure>] {
+      assert logFlag;
+      assert L.isNil(logStack);
+      let events = logBuf.toArray();
+      logBuf.clear();
+      events
+    };
+
     /** -- public log utils, parameterized by the types Name, Val, Error, Closure -- */
 
     public func logEvent
-      (tag : G.LogEventTag<Name, Val, Error, Closure>,
+      (tag : Log.LogEventTag<Name, Val, Error, Closure>,
        events : [LogEvent<Name, Val, Error, Closure>])
       : LogEvent<Name, Val, Error, Closure>
     {
@@ -96,7 +104,7 @@ module {
 
     public func logEventTag
       (event : LogEvent<Name, Val, Error, Closure>)
-      : G.LogEventTag<Name, Val, Error, Closure>
+      : Log.LogEventTag<Name, Val, Error, Closure>
     {
       switch event {
       case (#put(v, n, evts))      { #put(v, n) };
