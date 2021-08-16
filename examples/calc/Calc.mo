@@ -7,12 +7,11 @@ import P "mo:base/Prelude";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
 import Text "mo:base/Text";
-import Render "mo:redraw/Render";
 
 
-/* # Example of using Adapton functor (modules A and E imported above). */
+/* # Example of using Adapton engine. */
 
-/* Adapton functor step 1a:
+/* Adapton engine use -- step 1a:
       Define four types (see *'s below), and operations: */
 module {
 public type Name = Text; // *
@@ -50,26 +49,12 @@ public class Calc() {
   };
 
   func expEq(x:Exp, y:Exp) : Bool {
-    switch (x, y) {
-    case (#num(n1), #num(n2)) { n1 == n2 };
-    case (#named(n1, e1), #named(n2, e2)) { n1 == n2 and expEq(e1, e2) };
-    case (#add(e1, e2), #add(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
-    case (#mul(e1, e2), #mul(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
-    case (#div(e1, e2), #div(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
-    case (#sub(e1, e2), #sub(e3, e4)) { expEq(e1, e3) and expEq(e2, e4) };
-    case _ { false };
-    }
+    x == y
   };
 
   func errorEq(x:Error, y:Error) : Bool {
-    switch (x, y) {
-    case (#divByZero, #divByZero) { true };
-    case (#unimplemented, #unimplemented) { true };
-    case (#putError(n1), #putError(n2)) { n1 == n2 };
-    case _ { false };
-    }
+    x == y
   };
-
 
   /* -- custom DSL evaluator definition: -- */
 
@@ -122,11 +107,6 @@ public class Calc() {
                 };
            }
          };
-/*
-    case _ {
-           #err(#unimplemented)
-         }
-*/
     }
   };
 
@@ -173,60 +153,6 @@ public class Calc() {
        }
      },
      true);
-    // to do: draw things with this
-    let _renderOps = {
-      name = func (r:Render.TextRender, t:Text) {
-        r.textFg(t, #closed((255, 100, 255)))
-      };
-      val = func (r:Render.TextRender, i:Int) {
-        r.textFg(Int.toText(i), #closed((255, 255, 100)))
-      };
-      error = func (r:Render.TextRender, e:Error) {
-        // to do
-      };
-      closure = func (tr:Render.TextRender, e:Exp) {
-        let r = tr.charRender.render;
-        let tFill = #closed((120, 120, 0));
-        let flow0 = { intraPad=0; interPad=0; dir=#right };
-        let flow1 = { intraPad=1; interPad=1; dir=#right };
-        let flow2 = { intraPad=2; interPad=2; dir=#right };
-        func rec(e:Exp) {
-          r.begin(#flow(flow2));
-          r.fill(#open((100, 100, 0), 1));
-          r.begin(#flow(flow1));
-          r.fill(#open((0, 0, 0), 1));
-          r.begin(#flow(flow0));
-          r.fill(#closed((0, 0, 0)));
-          exp(e);
-          r.end();
-          r.end();
-          r.end()
-        };
-        func exp(e:Exp) {
-          switch e {
-          case (#named (n, e)) {
-                 r.begin(#flow(flow2));
-                 r.fill(#closed((100, 100, 0)));
-                 tr.textBg(
-                   n,
-                   #closed((0,0,0)),
-                   #closed((100, 100, 0)));
-                 rec(e);
-                 r.end();
-               };
-          case (#num n) { tr.textFg(Int.toText(n), tFill) };
-          case (#add(e1,e2)) { rec(e1); tr.textFg("+", tFill); rec(e2) };
-          case (#sub(e1,e2)) { rec(e1); tr.textFg("-", tFill); rec(e2) };
-          case (#mul(e1,e2)) { rec(e1); tr.textFg("*", tFill); rec(e2) };
-          case (#div(e1,e2)) { rec(e1); tr.textFg("/", tFill); rec(e2) };
-          };
-        };
-        rec(e)
-      }
-    };
-    // not yet fully initialized:
-    //  - still need to do setClosureEval
-    //  - TO DO -- and what about _renderOps (???)
     engine
   };
 

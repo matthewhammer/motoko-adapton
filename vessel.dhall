@@ -1,1 +1,1 @@
-{ dependencies = [ "base", "redraw", "stand" ], compiler = None Text }
+{ dependencies = [ "base" ], compiler = None Text }

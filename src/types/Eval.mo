@@ -8,8 +8,6 @@ import List "mo:base/List";
 import H "mo:base/HashMap";
 import L "mo:base/List";
 
-import Render "mo:redraw/Render";
-
 module {
 
 /*

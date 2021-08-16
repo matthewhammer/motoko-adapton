@@ -2,5 +2,5 @@
 
 ![build](https://github.com/matthewhammer/motoko-adapton/workflows/build/badge.svg)
 
-Coming soon: _"Mobile deltas"_ and _**Distributed** Adapton_.
+[Adapton in Motoko docs (mo-doc output)](http://matthewhammer.org/motoko-adapton/).
 
