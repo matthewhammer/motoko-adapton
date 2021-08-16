@@ -104,13 +104,16 @@ import P "mo:base/Prelude";
 
 import E "types/Eval";
 import G "types/Graph";
+import Log "Log";
 
 module {
-  // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `EvalType` module
-  public class Engine<Name, Val, Error, Closure>(evalOps:E.EvalOps<Name, Val, Error, Closure>, _logFlag:Bool) = Self {
-
-    /* Initialize */
-
+  // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `types/Eval` module
+  public class Engine<Name, Val, Error, Closure>
+  (
+    evalOps : E.EvalOps<Name, Val, Error, Closure>,
+    _logFlag : Bool
+  ) = Self
+  {
     func init(_logFlag:Bool) : G.Context<Name, Val, Error, Closure> {
       let _evalOps = evalOps;
       {
@@ -124,20 +127,15 @@ module {
         var store : G.Store<Name, Val, Error, Closure> =
           H.HashMap<Name, G.Node<Name, Val, Error, Closure>>(03, _evalOps.nameEq, _evalOps.nameHash);
 
-        // --- Logging state:
-
-        var logFlag = _logFlag;
-
-        var logBuf : G.LogEventBuf<Name, Val, Error, Closure> =
-          Buffer.Buffer<G.LogEvent<Name, Val, Error, Closure>>(0);
-
-        var logStack : G.LogBufStack<Name, Val, Error, Closure> = null;
         evalOps = _evalOps;
         var evalClosure = (null : ?E.EvalClosure<Val, Error, Closure>);
+
+        var logOps : G.LogOps<Name, Val, Error, Closure>
+          = Log.Logger<Name, Val, Error, Closure>(evalOps, _logFlag);
       }
     };
 
-    // Call exactly once, before any accesses; See usage instructions in `EvalType` module.
+    // Call exactly once, before any accesses; See usage instructions in `types/Eval` module.
     public func setEvalClosure(evalClosure:E.EvalClosure<Val, Error, Closure>) {
       switch (context.evalClosure) {
         case null { context.evalClosure := ?evalClosure };
@@ -145,121 +143,42 @@ module {
       }
     };
 
-    //public var renderOps : ?E.RenderOps<Name, Val, Error, Closure> = null;
-
-    /* A distinguished context for the Main API */
-
-    public var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
-
-    /* Main API: put, putThunk, and get */
-
+    /// put a value with name
     public func put(n:Name, val:Val)
       : R.Result<Name, G.PutError>
-      = contextPut(context, n, val);
+      = put_(context, n, val);
 
+    /// put a thunk with name
     public func putThunk(n:Name, clos:Closure)
       : R.Result<Name, G.PutError>
-      = contextPutThunk(context, n, clos);
+      = putThunk_(context, n, clos);
 
+    /// get a named value, possibly by evaluating thunks, if needed.
     public func get(n:Name)
       : R.Result<{#ok:Val; #err:Error}, G.GetError>
-      = contextGet(context, n);
+      = get_(context, n);
 
-    /* Public utilities */
+    var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
 
-    public func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
-      switch (r1, r2) {
-        case (#ok(v1), #ok(v2)) { evalOps.valEq(v1, v2) };
-        case (#err(e1), #err(e2)) { evalOps.errorEq(e1, e2) };
-        case _ false;
-      };
+
+
+    func logBegin
+      (c:G.Context<Name, Val, Error, Closure>)
+    {
+      c.logOps.begin()
     };
 
-    public func logEventsEq (e1:[G.LogEvent<Name, Val, Error, Closure>],
-                             e2:[G.LogEvent<Name, Val, Error, Closure>]) : Bool {
-      if (e1.size() == e2.size()) {
-        for (i in e1.keys()) {
-          if (logEventEq(e1[i], e2[i])) {
-            /* continue */
-          } else {
-            return false
-          }
-        };
-        true
-      } else { false }
+    func logEnd
+      (c:G.Context<Name, Val, Error, Closure>,
+       tag:G.LogEventTag<Name, Val, Error, Closure>)
+    {
+      c.logOps.end(tag)
     };
 
-    public func logEventEq (e1:G.LogEvent<Name, Val, Error, Closure>,
-                            e2:G.LogEvent<Name, Val, Error, Closure>) : Bool {
-      switch (e1, e2) {
-      case (#put(n1, v1, es1), #put(n2, v2, es2)) {
-             evalOps.nameEq(n1, n2) and evalOps.valEq(v1, v2) and logEventsEq(es1, es2)
-           };
-      case (#putThunk(n1, c1, es1), #putThunk(n2, c2, es2)) {
-             P.nyi()
-           };
-      case (#get(n1, r1, es1), #get(n2, r2, es2)) {
-             evalOps.nameEq(n1, n2) and resultEq(r1, r2) and logEventsEq(es1, es2)
-           };
-      case (#dirtyIncomingTo(n1, es1), #dirtyIncomingTo(n2, es2)) {
-             evalOps.nameEq(n1, n2) and logEventsEq(es1, es2)
-           };
-      case (#dirtyEdgeFrom(n1, es1), #dirtyEdgeFrom(n2, es2)) {
-             evalOps.nameEq(n1, n2) and logEventsEq(es1, es2)
-           };
-      case (#cleanEdgeTo(n1, f1, es1), #cleanEdgeTo(n2, f2, es2)) {
-             evalOps.nameEq(n1, n2) and f1 == f2 and logEventsEq(es1, es2)
-           };
-      case (#cleanThunk(n1, f1, es1), #cleanThunk(n2, f2, es2)) {
-            evalOps.nameEq(n1, n2) and f1 == f2 and logEventsEq(es1, es2)
-           };
-      case (#evalThunk(n1, r1, es1), #evalThunk(n2, r2, es2)) {
-             evalOps.nameEq(n1, n2) and resultEq(r1, r2) and logEventsEq(es1, es2)
-           };
-      case (_, _) {
-             false
-           }
-      }
-
-    };
-
-    // note: the log is just for output, for human-based debugging;
-    // it is not to used by evaluation logic, nor by our algorithms here.
-    public func getLogEvents() : [G.LogEvent<Name, Val, Error, Closure>] {
-      switch (context.agent) {
-      case (#editor) { context.logBuf.toArray() };
-      case (#archivist) { assert false ; loop { } };
-      }
-    };
-
-    public func getLogEventLast() : ?G.LogEvent<Name, Val, Error, Closure> {
-      if (context.logBuf.size() > 0) {
-        ?context.logBuf.get(context.logBuf.size() - 1)
-      } else {
-        null
-      }
-    };
-
-    // assert last log event
-    public func assertLogEventLast(expected:G.LogEvent<Name, Val, Error, Closure>) {
-      let logLen = context.logBuf.size();
-      if (logLen > 0) {
-        let actual = context.logBuf.get(logLen - 1);
-        assert logEventEq(actual, expected)
-      } else { // no log event
-        assert false
-      }
-    };
-
-    /* Context-parametric versions of the core API --- they only use `evalOps` (not the `context` var).
-
-     We do not /need/ these, but they demonstrate another design.
-     */
-
-    public func contextPut(c:G.Context<Name, Val, Error, Closure>, name:Name, val:Val)
+    func put_(c:G.Context<Name, Val, Error, Closure>, name:Name, val:Val)
       : R.Result<Name, G.PutError>
     {
-      beginLogEvent(c);
+      logBegin(c);
       let newRefNode : G.Ref<Name, Val, Error, Closure> = {
         incoming=newEdgeBuf();
         content=val;
@@ -276,14 +195,14 @@ module {
            };
       };
       addEdge(c, name, #put(val));
-      endLogEvent(c, #put(name, val));
+      logEnd(c, #put(name, val));
       #ok(name)
     };
 
-    public func contextPutThunk(c:G.Context<Name, Val, Error, Closure>, name:Name, cl:Closure)
+    func putThunk_(c:G.Context<Name, Val, Error, Closure>, name:Name, cl:Closure)
       : R.Result<Name, G.PutError>
     {
-      beginLogEvent(c);
+      logBegin(c);
       let newThunkNode : G.Thunk<Name, Val, Error, Closure> = {
         incoming=newEdgeBuf();
         outgoing=[];
@@ -302,20 +221,20 @@ module {
       case (?#ref(oldRef)) { dirtyRef(c, name, oldRef) };
       };
       addEdge(c, name, #putThunk(cl));
-      endLogEvent(c, #putThunk(name, cl));
+      logEnd(c, #putThunk(name, cl));
       #ok(name)
     };
 
-    public func contextGet(c:G.Context<Name, Val, Error, Closure>, name:Name)
+    func get_(c:G.Context<Name, Val, Error, Closure>, name:Name)
       : R.Result<{#ok:Val;#err:Error}, G.GetError>
     {
-      beginLogEvent(c);
+      logBegin(c);
       switch (c.store.get(name)) {
       case null { #err(()) /* error: dangling/forged name posing as live node id. */ };
       case (?#ref(refNode)) {
              let val = refNode.content;
              let res = #ok(val);
-             endLogEvent(c, #get(name, res));
+             logEnd(c, #get(name, res));
              addEdge(c, name, #get(res));
              #ok(res)
            };
@@ -324,24 +243,24 @@ module {
              case null {
                     assert (thunkNode.incoming.size() == 0);
                     let res = evalThunk(c, name, thunkNode);
-                    endLogEvent(c, #get(name, res));
+                    logEnd(c, #get(name, res));
                     addEdge(c, name, #get(res));
                     #ok(res)
                   };
              case (?oldResult) {
                     if (thunkIsDirty(thunkNode)) {
                       if(cleanThunk(c, name, thunkNode)) {
-                        endLogEvent(c, #get(name, oldResult));
+                        logEnd(c, #get(name, oldResult));
                         addEdge(c, name, #get(oldResult));
                         #ok(oldResult)
                       } else {
                         let res = evalThunk(c, name, thunkNode);
-                        endLogEvent(c, #get(name, res));
+                        logEnd(c, #get(name, res));
                         addEdge(c, name, #get(res));
                         #ok(res)
                       }
                     } else {
-                      endLogEvent(c, #get(name, oldResult));
+                      logEnd(c, #get(name, oldResult));
                       addEdge(c, name, #get(oldResult));
                       #ok(oldResult)
                     }
@@ -350,8 +269,6 @@ module {
            };
       }
     };
-
-    /* Private implementation details --- Change propagation (aka, "dirtying and cleaning") algorithms below.  */
 
     func newEdge(source:Name, target:Name, action:G.Action<Val, Error, Closure>)
       : G.Edge<Name, Val, Error, Closure> {
@@ -460,7 +377,7 @@ module {
       // to do: if we carry the "original put name" with our dirty
       //   traversals, we can report about the overused name that causes this error,
       //   and its detection here (usually non-locally within the DCG, at another name, always of a thunk).
-      beginLogEvent(c);
+      logBegin(c);
       if (stackContainsNodeName(c.stack, n)) {
         // to do: the node to dirty is currently running; the program is overusing a name
         // #err(#archivistNameOveruse(c.stack, n))
@@ -469,22 +386,22 @@ module {
       for (edge in thunkNode.incoming.vals()) {
         dirtyEdge(c, edge)
       };
-      endLogEvent(c, #dirtyIncomingTo(n));
+      logEnd(c, #dirtyIncomingTo(n));
     };
 
     func dirtyRef(c:G.Context<Name, Val, Error, Closure>, n:Name, refNode:G.Ref<Name, Val, Error, Closure>) {
-      beginLogEvent(c);
+      logBegin(c);
       for (edge in refNode.incoming.vals()) {
         dirtyEdge(c, edge)
       };
-      endLogEvent(c, #dirtyIncomingTo(n));
+      logEnd(c, #dirtyIncomingTo(n));
     };
 
     func dirtyEdge(c:G.Context<Name, Val, Error, Closure>, edge:G.Edge<Name, Val, Error, Closure>) {
       if (edge.dirtyFlag) {
         // graph invariants ==> dirtying is already done.
       } else {
-        beginLogEvent(c);
+        logBegin(c);
         edge.dirtyFlag := true;
         switch (c.store.get(edge.dependent)) {
         case null { P.unreachable() };
@@ -493,12 +410,20 @@ module {
                dirtyThunk(c, edge.dependent, thunkNode)
              };
         };
-        endLogEvent(c, #dirtyEdgeFrom(edge.dependent));
+        logEnd(c, #dirtyEdgeFrom(edge.dependent));
       }
     };
 
+    func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
+      switch (r1, r2) {
+        case (#ok(v1), #ok(v2)) { evalOps.valEq(v1, v2) };
+        case (#err(e1), #err(e2)) { evalOps.errorEq(e1, e2) };
+        case _ false;
+      };
+    };
+
     func cleanEdge(c:G.Context<Name, Val, Error, Closure>, e:G.Edge<Name, Val, Error, Closure>) : Bool {
-      beginLogEvent(c);
+      logBegin(c);
       let successFlag = if (e.dirtyFlag) {
         switch (e.checkpoint, c.store.get(e.dependency)) {
         case (#get(oldRes), ?#ref(refNode)) {
@@ -540,21 +465,21 @@ module {
       } else {
         true // already clean
       };
-      endLogEvent(c, #cleanEdgeTo(e.dependency, successFlag));
+      logEnd(c, #cleanEdgeTo(e.dependency, successFlag));
       successFlag;
     };
 
     func cleanThunk(c:G.Context<Name, Val, Error, Closure>, n:Name, t:G.Thunk<Name, Val, Error, Closure>) : Bool {
-      beginLogEvent(c);
+      logBegin(c);
       for (i in t.outgoing.keys()) {
         if (cleanEdge(c, t.outgoing[i])) {
           /* continue */
         } else {
-          endLogEvent(c, #cleanThunk(n, false));
+          logEnd(c, #cleanThunk(n, false));
           return false // outgoing[i] could not be cleaned.
         }
       };
-      endLogEvent(c, #cleanThunk(n, true));
+      logEnd(c, #cleanThunk(n, true));
       true
     };
 
@@ -568,7 +493,7 @@ module {
        thunkNode:G.Thunk<Name, Val, Error, Closure>)
       : R.Result<Val, Error>
     {
-      beginLogEvent(c);
+      logBegin(c);
       let oldEdges = c.edges;
       let oldStack = c.stack;
       let oldAgent = c.agent;
@@ -596,89 +521,8 @@ module {
       };
       c.store.put(nodeName, #thunk(newNode));
       addBackEdges(c, newNode.outgoing);
-      endLogEvent(c, #evalThunk(nodeName, res));
+      logEnd(c, #evalThunk(nodeName, res));
       res
-    };
-
-    /** -- private log utils -- */
-
-    func beginLogEvent
-      (c:G.Context<Name, Val, Error, Closure>)
-    {
-      if (c.logFlag) {
-        c.logStack := ?(c.logBuf, c.logStack);
-        c.logBuf := Buffer.Buffer<G.LogEvent<Name, Val, Error, Closure>>(03);
-      }
-    };
-
-    func endLogEvent
-      (c:G.Context<Name, Val, Error, Closure>,
-       tag:G.LogEventTag<Name, Val, Error, Closure>)
-    {
-      if (c.logFlag) {
-        switch (c.logStack) {
-        case null { assert false };
-        case (?(prevLogBuf, logStack)) {
-               let events = c.logBuf.toArray();
-               let ev = logEvent(tag, events);
-               c.logStack := logStack;
-               c.logBuf := prevLogBuf;
-               c.logBuf.add(ev);
-             }
-        }
-      }
-    };
-
-    /** -- public log utils, parameterized by the types Name, Val, Error, Closure -- */
-
-    public func logEvent
-      (tag:G.LogEventTag<Name, Val, Error, Closure>,
-       events:[G.LogEvent<Name, Val, Error, Closure>])
-      : G.LogEvent<Name, Val, Error, Closure>
-    {
-      switch tag {
-      case (#put(v, n))      { #put(v, n,      events) };
-      case (#putThunk(c, n)) { #putThunk(c, n, events) };
-      case (#get(r, n))      { #get(r, n,      events) };
-      case (#dirtyIncomingTo(n)){ #dirtyIncomingTo(n,events) };
-      case (#dirtyEdgeFrom(n)){ #dirtyEdgeFrom(n,events) };
-      case (#cleanEdgeTo(n,f)) { #cleanEdgeTo(n,f,events) };
-      case (#cleanThunk(n,f)) { #cleanThunk(n,f,events) };
-      case (#evalThunk(n,r)) { #evalThunk(n,r,events) };
-      }
-    };
-
-
-    public func logEventBody
-      (event:G.LogEvent<Name, Val, Error, Closure>)
-      : [G.LogEvent<Name, Val, Error, Closure>]
-    {
-      switch event {
-      case (#put(v, n, evts))      { evts };
-      case (#putThunk(c, n, evts)) { evts };
-      case (#get(r, n, evts))      { evts };
-      case (#dirtyIncomingTo(n, evts)){ evts };
-      case (#dirtyEdgeFrom(n, evts)){ evts };
-      case (#cleanEdgeTo(n,f, evts)) { evts };
-      case (#cleanThunk(n,f, evts)) { evts };
-      case (#evalThunk(n,r, evts)) { evts };
-      }
-    };
-
-    public func logEventTag
-      (event:G.LogEvent<Name, Val, Error, Closure>)
-      : G.LogEventTag<Name, Val, Error, Closure>
-    {
-      switch event {
-      case (#put(v, n, evts))      { #put(v, n) };
-      case (#putThunk(c, n, evts)) { #putThunk(c, n) };
-      case (#get(r, n, evts))      { #get(r, n) };
-      case (#dirtyIncomingTo(n, evts)){ #dirtyIncomingTo(n) };
-      case (#dirtyEdgeFrom(n, evts)){ #dirtyEdgeFrom(n) };
-      case (#cleanEdgeTo(n,f, evts)) { #cleanEdgeTo(n, f) };
-      case (#cleanThunk(n,f, evts)) { #cleanThunk(n, f) };
-      case (#evalThunk(n,r, evts)) { #evalThunk(n, r) };
-      }
     };
 
   } // class Engine
