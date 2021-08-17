@@ -273,6 +273,7 @@ module {
     func newEdgeBuf() : G.EdgeBuf<Name, Val, Error, Closure> { Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(03) };
 
     func thunkIsDirty(t:G.Thunk<Name, Val, Error, Closure>) : Bool {
+      assert switch(t.result) { case null false; case _ true };
       for (i in t.outgoing.keys()) {
         if (t.outgoing[i].dirtyFlag) {
           return true
@@ -365,17 +366,21 @@ module {
                } else { false }
              };
         case (#get(oldRes), ?#thunk(thunkNode)) {
-               if (optionResultEq(?oldRes, thunkNode.result)) {
+               if (not cleanThunk(c, e.dependency, thunkNode)) {
+                 ignore evalThunk(c, e.dependency, thunkNode);
+               };
+               // now, we care about
+               // equality test of old observation vs latest observation on edge,
+               // post-cleaning, regardless of cases above.
+               let thunkNode2 = switch(c.store.get(e.dependency)) {
+                 case (?#thunk(tn)) { tn };
+                 case _ { loop { assert false } };
+               };
+               if (optionResultEq(?oldRes, thunkNode2.result)) {
                  e.dirtyFlag := false;
-                 true // equal results ==> clean.
+                 true // equal results ==> clean edge; reuse it edge.
                } else {
-                 let newRes = evalThunk(c, e.dependency, thunkNode);
-                 if (resultEq(oldRes, newRes)) {
-                   e.dirtyFlag := false;
-                   true // equal results ==> clean.
-                 } else {
-                   false // changed result ==> thunk could not be cleaned.
-                 }
+                 false // changed result ==> could not clean edge; must replace.
                }
              };
         case (_, _) {
@@ -391,12 +396,20 @@ module {
 
     func cleanThunk(c:G.Context<Name, Val, Error, Closure>, n:Name, t:G.Thunk<Name, Val, Error, Closure>) : Bool {
       logBegin(c);
-      for (i in t.outgoing.keys()) {
-        if (cleanEdge(c, t.outgoing[i])) {
-          /* continue */
-        } else {
-          logEnd(c, #cleanThunk(n, false));
-          return false // outgoing[i] could not be cleaned.
+      if (switch(t.result) { case null true; case _ false }) {
+        // no cache result and in demand ==> we must evaluate thunk (from scratch):
+        // now the thunk is "clean" (always an invariant post evaluation).
+        ignore evalThunk(c, n, t);
+        logEnd(c, #cleanThunk(n, true));
+        return true
+      } else {
+        for (i in t.outgoing.keys()) {
+          if (cleanEdge(c, t.outgoing[i])) {
+            /* continue */
+          } else {
+            logEnd(c, #cleanThunk(n, false));
+            return false // outgoing[i] could not be cleaned.
+          }
         }
       };
       logEnd(c, #cleanThunk(n, true));
