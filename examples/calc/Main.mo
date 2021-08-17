@@ -71,6 +71,7 @@ actor {
 
       let res3 = calc.engine.get("f");
       debug { Debug.print("Assert change propagation: Reuse clean graph") };
+
       assert calc.engine.takeLog() ==
         [#get("f", #ok(+6),
           [
