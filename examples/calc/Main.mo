@@ -100,9 +100,18 @@ actor {
        [#cleanThunk("g", true,
        [#evalThunk("g", #ok(+3), [])])]),
         #cleanEdgeTo("a", true, [])])])];
+    };
 
-      debug { Debug.print(debug_show calc.engine.takeLog()) };
-
+    do /* re-demand "k", and re-use cleaning from above (of "f" and dependents) */ {
+      let res3 = calc.engine.get("k");
+      debug { Debug.print("Assert change propagation: Reuse clean graph") };
+      assert calc.engine.takeLog() ==
+        [#get("k", #ok(+6),
+        [#cleanThunk("k", false,
+        [#cleanEdgeTo("g", false,
+        [#cleanThunk("g", true, [])])]),
+         #evalThunk("k", #ok(+6),
+        [#get("g", #ok(+3), [])])])];
     };
 
     debug { Debug.print("Calc test: Success") };
