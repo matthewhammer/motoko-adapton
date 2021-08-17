@@ -326,6 +326,14 @@ module {
       }
     };
 
+    func optionResultEq (r1:?{#ok:Val; #err:Error}, r2:?{#ok:Val; #err:Error}) : Bool {
+      switch (r1, r2) {
+        case (null, null) { true };
+        case (?r1, ?r2) { resultEq(r1, r2) };
+        case _ { false };
+      }
+    };
+
     func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {
         case (#ok(v1), #ok(v2)) { evalOps.valEq(v1, v2) };
@@ -356,14 +364,18 @@ module {
                  true
                } else { false }
              };
-        case (#get(oldRes), ?#thunk(thunkNode)) {               
-               // dirty flag true ==> we must re-evaluate thunk:
-               let newRes = evalThunk(c, e.dependency, thunkNode);
-               if (resultEq(oldRes, newRes)) {
+        case (#get(oldRes), ?#thunk(thunkNode)) {
+               if (optionResultEq(?oldRes, thunkNode.result)) {
                  e.dirtyFlag := false;
                  true // equal results ==> clean.
                } else {
-                 false // changed result ==> thunk could not be cleaned.
+                 let newRes = evalThunk(c, e.dependency, thunkNode);
+                 if (resultEq(oldRes, newRes)) {
+                   e.dirtyFlag := false;
+                   true // equal results ==> clean.
+                 } else {
+                   false // changed result ==> thunk could not be cleaned.
+                 }
                }
              };
         case (_, _) {
