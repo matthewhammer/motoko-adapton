@@ -154,7 +154,6 @@ module {
       case (?#thunk(thunkNode)) {
              switch (thunkNode.result) {
              case null {
-                    assert (thunkNode.incoming.size() == 0);
                     let res = evalThunk(c, name, thunkNode);
                     logEnd(c, #get(name, res));
                     addEdge(c, name, #get(res));
