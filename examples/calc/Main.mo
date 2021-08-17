@@ -102,7 +102,7 @@ actor {
         #cleanEdgeTo("a", true, [])])])];
     };
 
-    do /* re-demand "k", and re-use cleaning from above (of "f" and dependents) */ {
+    do /* re-demand "k", and re-use cleaning from above (of "g") */ {
       let res3 = calc.engine.get("k");
       debug { Debug.print("Assert change propagation: Reuse clean graph") };
       assert calc.engine.takeLog() ==
