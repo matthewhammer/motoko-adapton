@@ -58,7 +58,7 @@ actor {
              #get("g", #ok(0), [])])])];
     };
 
-    do /* input change, and re-demand output value */ {
+    do /* input change (overwrite "g"), and re-demand output value (of "f") */ {
       ignore calc.engine.putThunk("g", #add(#num(1), #num(2)));
       debug { Debug.print("Assert input change: Overwrite thunk with putThunk.") };
       assert calc.engine.takeLog() ==
@@ -71,20 +71,33 @@ actor {
 
       let res3 = calc.engine.get("f");
       debug { Debug.print("Assert change propagation: Reuse clean graph") };
-
       assert calc.engine.takeLog() ==
         [#get("f", #ok(+6),
-          [
-            #cleanThunk("f", false,
-             [#cleanEdgeTo("g", false, [])]),
-            #evalThunk("f", #ok(+6),
-                       [
-                         #get("g", #ok(+3),
-                              [#evalThunk("g", #ok(+3), [])]),
-                         #get("a", #ok(+3), [])
-                       ]
-            )])];
+        [#cleanThunk("f", false,
+        [#cleanEdgeTo("g", false,
+        [#evalThunk("g", #ok(+3), [])])]),
+         #evalThunk("f", #ok(+6),
+        [#get("g", #ok(+3), []),
+         #get("a", #ok(+3), [])])])]
+    };
 
+    do /* input change with same valuation ("g"'s new  expression has same value) */ {
+      ignore calc.engine.putThunk("g", #add(#num(3), #num(0)));
+      debug { Debug.print("Assert input change: Overwrite thunk with putThunk, again.") };
+      assert calc.engine.takeLog() ==
+        [#putThunk("g", #add(#num(+3), #num(0)),
+        [#dirtyIncomingTo("g",
+        [#dirtyEdgeFrom("f",
+        [#dirtyIncomingTo("f", [])])])])];
+
+      let res3 = calc.engine.get("f");
+      debug { Debug.print("Assert change propagation: Clean and reuse (most of) graph") };
+      assert calc.engine.takeLog() ==
+        [#get("f", #ok(+6),
+        [#cleanThunk("f", true,
+        [#cleanEdgeTo("g", true,
+        [#evalThunk("g", #ok(+3), [])]),
+         #cleanEdgeTo("a", true, [])])])]
     };
 
     debug { Debug.print("Calc test: Success") };

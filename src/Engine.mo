@@ -356,24 +356,16 @@ module {
                  true
                } else { false }
              };
-        case (#get(oldRes), ?#thunk(thunkNode)) {
-               switch (thunkNode.result) {
-                 case null {
-                   /* no cached result ==> cannot clean. */
-                   false
-                 };
-                 case (?res) {
-                   // dirty flag true ==> we must re-evaluate thunk:
-                   let newRes = evalThunk(c, e.dependency, thunkNode);
-                   if (resultEq(oldRes, newRes)) {
-                     e.dirtyFlag := false;
-                     true // equal results ==> clean.
-                   } else {
-                     false // changed result ==> thunk could not be cleaned.
-                   }
-               };
-             }
-           };
+        case (#get(oldRes), ?#thunk(thunkNode)) {               
+               // dirty flag true ==> we must re-evaluate thunk:
+               let newRes = evalThunk(c, e.dependency, thunkNode);
+               if (resultEq(oldRes, newRes)) {
+                 e.dirtyFlag := false;
+                 true // equal results ==> clean.
+               } else {
+                 false // changed result ==> thunk could not be cleaned.
+               }
+             };
         case (_, _) {
                loop { assert false }
              };
