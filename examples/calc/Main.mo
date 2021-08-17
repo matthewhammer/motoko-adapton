@@ -16,9 +16,8 @@ actor {
     debug { Debug.print("Calc test: Start") };
     do /* initial run */ {
       let res1 = calc.eval(exp);
-      let res2 = calc.engine.get("f");
 
-      assert calc.engine.takeLog() ==
+       assert calc.engine.takeLog() ==
         [#putThunk("h", #num(+2), []),
          #putThunk("g", #div(#num(+4), #mul(#num(+6), #thunk("h"))), []),
          #putThunk("c", #add(#num(+1), #num(+2)), []),
@@ -43,9 +42,12 @@ actor {
                  #get("d", #ok(+3),
                 [#evalThunk("d", #ok(+3),
                 [#get("e", #ok(+2),
-                [#evalThunk("e", #ok(+2), [])])])])])])])]),
-         #get("f", #ok(+3), [])
-        ]
+                [#evalThunk("e", #ok(+2), [])])])])])])])])
+        ];
+
+       let res2 = calc.engine.get("f");
+       assert calc.engine.takeLog() ==
+         [#get("f", #ok(+3), [])];
     };
 
     do /* input change, and re-demand output value */ {
