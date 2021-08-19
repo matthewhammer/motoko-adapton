@@ -345,9 +345,9 @@ module {
                if (resultEq(oldRes, cleanRes)) {
                  e.dirtyFlag := false;
                  true // equal results ==> clean edge; reuse it edge.
-                } else {
-                  false // changed result ==> could not clean edge; must replace.
-                }
+               } else {
+                 false // changed result ==> could not clean edge; must replace.
+               }
              };
         case (_, _) {
                loop { assert false }
