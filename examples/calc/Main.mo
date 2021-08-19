@@ -47,15 +47,17 @@ actor {
       debug { Debug.print("Assert re-get.") };
       ignore calc.engine.get("f");
       assert calc.engine.takeLog() ==
-         [#get("f", #ok(+3), [])];
+        [#get("f", #ok(+3),
+        [#cleanThunk("f", true,
+        [#cleanEdgeTo("g", true, []),
+         #cleanEdgeTo("a", true, [])])])];
 
       debug { Debug.print("Assert share.") };
       ignore calc.eval(#alloc("k", #add(#thunk("g"), #num(3))));
-      assert calc.engine.takeLog() ==
-        [#putThunk("k", #add(#thunk("g"), #num(+3)), []),
-         #get("k", #ok(+3), [
-           #evalThunk("k", #ok(+3), [
-             #get("g", #ok(0), [])])])];
+      let log = calc.engine.takeLog();
+      Debug.print(calc.showLog(log));
+      assert log ==
+        [#putThunk("k", #add(#thunk("g"), #num(+3)), []), #get("k", #ok(+3), [#evalThunk("k", #ok(+3), [#get("g", #ok(0), [#cleanThunk("g", true, [#cleanEdgeTo("h", true, [])])])])])]
     };
 
     do /* input change (overwrite "g"), and re-demand output value (of "f") */ {
@@ -75,10 +77,15 @@ actor {
         [#get("f", #ok(+6),
         [#cleanThunk("f", false,
         [#cleanEdgeTo("g", false,
-        [#cleanThunk("g", true,
-        [#evalThunk("g", #ok(+3), [])])])]),
-         #evalThunk("f", #ok(+6), [#get("g", #ok(+3), []),
-         #get("a", #ok(+3), [])])])];
+        [#cleanThunk("g", false,
+        [#evalThunk("g", #ok(+3), [])])]),
+         #evalThunk("f", #ok(+6),
+        [#get("g", #ok(+3),
+        [#cleanThunk("g", true, [])]),
+         #get("a", #ok(+3),
+        [#cleanThunk("a", true,
+        [#cleanEdgeTo("b", true, []),
+         #cleanEdgeTo("d", true, [])])])])])])]
     };
 
     do /* input change with same valuation ("g"'s new  expression has same value) */ {
@@ -92,26 +99,26 @@ actor {
 
       let res3 = calc.engine.get("f");
       debug { Debug.print("Assert change propagation: Clean and reuse (most of) graph") };
-
       assert calc.engine.takeLog() ==
-      [#get("f", #ok(+6), [
-       #cleanThunk("f", true,
-       [#cleanEdgeTo("g", true,
-       [#cleanThunk("g", true,
-       [#evalThunk("g", #ok(+3), [])])]),
-        #cleanEdgeTo("a", true, [])])])];
+        [#get("f", #ok(+6),
+        [#cleanThunk("f", true,
+        [#cleanEdgeTo("g", true,
+        [#cleanThunk("g", false,
+        [#evalThunk("g", #ok(+3), [])])]),
+         #cleanEdgeTo("a", true, [])])])]
     };
 
-    do /* re-demand "k", and re-use cleaning from above (of "g") */ {
+    do /* re-demand "k", and re-use cleaning from above (of "g"), though the value changed. */ {
       let res3 = calc.engine.get("k");
       debug { Debug.print("Assert change propagation: Reuse clean graph") };
       assert calc.engine.takeLog() ==
         [#get("k", #ok(+6),
         [#cleanThunk("k", false,
         [#cleanEdgeTo("g", false,
-        [#cleanThunk("g", true, [])])]),
+        [#cleanThunk("g", true, [])]),
          #evalThunk("k", #ok(+6),
-        [#get("g", #ok(+3), [])])])];
+        [#get("g", #ok(+3),
+        [#cleanThunk("g", true, [])])])])])]
     };
 
     debug { Debug.print("Calc test: Success") };

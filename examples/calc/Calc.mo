@@ -149,6 +149,12 @@ public class Calc() {
     }
   };
 
+  public func showLog(l : Engine.Log<Name, Val, Error, Exp>) : Text {
+    var s = "<error:debug blocks required for Calc.showLog>";
+    debug { s := debug_show l };
+    s
+  };
+
   /* -- cache implementation, via adapton package -- */
 
   public var engine : Engine.Engine<Name, Val, Error, Exp> = do {
@@ -170,7 +176,6 @@ public class Calc() {
      true);
     engine
   };
-
 };
 
 }
