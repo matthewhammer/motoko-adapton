@@ -57,13 +57,13 @@ module {
   public type GetError = (); // to do
 
   public type Context<Name, Val, Error, Closure> = {
-    var agent: {#editor; #archivist};
     var edges: EdgeBuf<Name, Val, Error, Closure>;
     var stack: Stack<Name>;
     var store: Store<Name, Val, Error, Closure>;
     var logOps : Log.LogOps<Name, Val, Error, Closure>;
-    // defined and supplied by the client:
+    // defined and supplied by the client as Engine class param:
     evalOps: E.EvalOps<Name, Val, Error, Closure>;
+    // write-once back-patching for closure evaluation
     var evalClosure: ?E.EvalClosure<Val, Error, Closure>;
   };
 }

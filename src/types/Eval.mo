@@ -30,9 +30,11 @@ module {
  To resolve this cycle, the Adapton client does three steps, not one:
 
  a. Defines the items mentioned in question 1 above, and applies the
-    Adapton.Engine functor to get an initial cache representation.  This
-    representation is only half-defined, however: It still has no way to
-    perform Closure evaluation.  Steps (b) and (c) are still needed below.
+    Adapton.Engine class constructor to get an initial cache representation.
+
+    This representation is mostly, but not fully, initiallized:
+    It still has no way to  perform Closure evaluation.
+    Steps (b) and (c) are still needed below.
 
  b. Defines the evaluation function required by item 2 above,
     using the cache just defined in item (a).
@@ -43,7 +45,7 @@ module {
  Now, the evaluation function in step (b) is fully-defined,
  and it is ready to use the cache provided by the adapton package.
 
- See tests dir for an example.
+ See `examples/calc` for a working example.
 
 */
 
