@@ -15,6 +15,8 @@ import Lg "types/Log";
 import Log "Log";
 
 module {
+  public type Log<Name, Val, Error, Closure> = [Log.LogEvent<Name, Val, Error, Closure>];
+
   // class accepts the associated operations over the 4 user-defined type params; See usage instructions in `types/Eval` module
   public class Engine<Name, Val, Error, Closure>
   (
@@ -152,32 +154,13 @@ module {
              #ok(res)
            };
       case (?#thunk(thunkNode)) {
-             switch (thunkNode.result) {
-             case null {
-                    let res = evalThunk(c, name, thunkNode);
-                    logEnd(c, #get(name, res));
-                    addEdge(c, name, #get(res));
-                    #ok(res)
-                  };
-             case (?oldResult) {
-                    if (thunkIsDirty(thunkNode)) {
-                      if(cleanThunk(c, name, thunkNode)) {
-                        logEnd(c, #get(name, oldResult));
-                        addEdge(c, name, #get(oldResult));
-                        #ok(oldResult)
-                      } else {
-                        let res = evalThunk(c, name, thunkNode);
-                        logEnd(c, #get(name, res));
-                        addEdge(c, name, #get(res));
-                        #ok(res)
-                      }
-                    } else {
-                      logEnd(c, #get(name, oldResult));
-                      addEdge(c, name, #get(oldResult));
-                      #ok(oldResult)
-                    }
-                  };
-             }
+             let getRes = switch (thunkNode.result) {
+               case null { evalThunk(c, name, thunkNode) };
+               case (?_) { cleanThunk(c, name, thunkNode) };
+             };
+             addEdge(c, name, #get(getRes));
+             logEnd(c, #get(name, getRes));
+             #ok(getRes)
            };
       }
     };
@@ -327,14 +310,6 @@ module {
       }
     };
 
-    func optionResultEq (r1:?{#ok:Val; #err:Error}, r2:?{#ok:Val; #err:Error}) : Bool {
-      switch (r1, r2) {
-        case (null, null) { true };
-        case (?r1, ?r2) { resultEq(r1, r2) };
-        case _ { false };
-      }
-    };
-
     func resultEq (r1:{#ok:Val; #err:Error}, r2:{#ok:Val; #err:Error}) : Bool {
       switch (r1, r2) {
         case (#ok(v1), #ok(v2)) { evalOps.valEq(v1, v2) };
@@ -366,17 +341,8 @@ module {
                } else { false }
              };
         case (#get(oldRes), ?#thunk(thunkNode)) {
-               if (not cleanThunk(c, e.dependency, thunkNode)) {
-                 ignore evalThunk(c, e.dependency, thunkNode);
-               };
-               // now, we care about
-               // equality test of old observation vs latest observation on edge,
-               // post-cleaning, regardless of cases above.
-               let thunkNode2 = switch(c.store.get(e.dependency)) {
-                 case (?#thunk(tn)) { tn };
-                 case _ { loop { assert false } };
-               };
-               if (optionResultEq(?oldRes, thunkNode2.result)) {
+               let cleanRes = cleanThunk(c, e.dependency, thunkNode);
+               if (resultEq(oldRes, cleanRes)) {
                  e.dirtyFlag := false;
                  true // equal results ==> clean edge; reuse it edge.
                } else {
@@ -394,26 +360,31 @@ module {
       successFlag;
     };
 
-    func cleanThunk(c:G.Context<Name, Val, Error, Closure>, n:Name, t:G.Thunk<Name, Val, Error, Closure>) : Bool {
+    func cleanThunk(c:G.Context<Name, Val, Error, Closure>, n:Name, t:G.Thunk<Name, Val, Error, Closure>) : R.Result<Val, Error> {
       logBegin(c);
-      if (switch(t.result) { case null true; case _ false }) {
-        // no cache result and in demand ==> we must evaluate thunk (from scratch):
-        // now the thunk is "clean" (always an invariant post evaluation).
-        ignore evalThunk(c, n, t);
-        logEnd(c, #cleanThunk(n, true));
-        return true
-      } else {
-        for (i in t.outgoing.keys()) {
-          if (cleanEdge(c, t.outgoing[i])) {
-            /* continue */
-          } else {
-            logEnd(c, #cleanThunk(n, false));
-            return false // outgoing[i] could not be cleaned.
-          }
-        }
-      };
-      logEnd(c, #cleanThunk(n, true));
-      true
+      switch(t.result) {
+        case null {
+          // no cache result and in demand ==> we must evaluate thunk (from scratch):
+          // now the thunk is "clean" (always an invariant post evaluation).
+          let res = evalThunk(c, n, t);
+          logEnd(c, #cleanThunk(n, false)); // false because no dep graph to clean
+          res
+        };
+        case (?oldRes) {
+          for (i in t.outgoing.keys()) {
+            if (cleanEdge(c, t.outgoing[i])) {
+              /* continue */
+            } else {
+              let res = evalThunk(c, n, t);
+              logEnd(c, #cleanThunk(n, false)); // false because we could not clean edge
+              return res
+            }
+          };
+          // cleaning success: old result and its dep graph is consistent.
+          logEnd(c, #cleanThunk(n, true));
+          oldRes
+       };
+      }
     };
 
     func stackContainsNodeName(s:G.Stack<Name>, nodeName:Name) : Bool {

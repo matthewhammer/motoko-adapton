@@ -9,6 +9,9 @@ import L "mo:base/List";
 
 module {
 
+  public type Log<Name, Val, Error, Closure> =
+    [LogEvent<Name, Val, Error, Closure>];
+
   public type LogEvent<Name, Val, Error, Closure> =
     Log.LogEvent<Name, Val, Error, Closure>;
 
@@ -58,7 +61,7 @@ module {
       }
     };
 
-    public func take() : [LogEvent<Name, Val, Error, Closure>] {
+    public func take() : Log<Name, Val, Error, Closure> {
       assert logFlag;
       assert L.isNil(logStack);
       let events = logBuf.toArray();
