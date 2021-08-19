@@ -19,7 +19,7 @@ actor {
     do /* initial run */ {
       let res1 = calc.eval(exp);
       debug { Debug.print(testStep # "Assert first evaluation.") };
-      assert calc.engine.takeLog() == [
+      assert calc.takeLog() == [
         #putThunk("h", #num(+2), []),
         #putThunk("g", #div(#num(+4), #mul(#num(+6), #thunk("h"))), []),
         #putThunk("c", #add(#num(+1), #num(+2)), []),
@@ -48,7 +48,7 @@ actor {
 
       debug { Debug.print(testStep # "Assert re-get.") };
       ignore calc.engine.get("f");
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#get("f", #ok(+3),
         [#cleanThunk("f", true,
         [#cleanEdgeTo("g", true, []),
@@ -56,7 +56,7 @@ actor {
 
       debug { Debug.print(testStep # "Assert share.") };
       ignore calc.eval(#alloc("k", #add(#thunk("g"), #num(3))));
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#putThunk("k", #add(#thunk("g"), #num(+3)), []),
          #get("k", #ok(+3),
         [#evalThunk("k", #ok(+3),
@@ -68,7 +68,7 @@ actor {
     do /* input change (overwrite "g"), and re-demand output value (of "f") */ {
       ignore calc.engine.putThunk("g", #add(#num(1), #num(2)));
       debug { Debug.print(testStep # "Assert input change: Overwrite thunk with putThunk.") };
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#putThunk("g", #add(#num(+1), #num(+2)),
                    [#dirtyIncomingTo("g",
                    [#dirtyEdgeFrom("f",
@@ -78,7 +78,7 @@ actor {
 
       let res3 = calc.engine.get("f");
       debug { Debug.print(testStep # "Assert change propagation: Reuse clean graph") };
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#get("f", #ok(+6),
         [#cleanThunk("f", false,
         [#cleanEdgeTo("g", false,
@@ -96,7 +96,7 @@ actor {
     do /* input change with same valuation ("g"'s new  expression has same value) */ {
       ignore calc.engine.putThunk("g", #add(#num(3), #num(0)));
       debug { Debug.print(testStep # "Assert input change: Overwrite thunk with putThunk, again.") };
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
       [#putThunk("g", #add(#num(+3), #num(0)),
         [#dirtyIncomingTo("g",
         [#dirtyEdgeFrom("f",
@@ -104,7 +104,7 @@ actor {
 
       let res3 = calc.engine.get("f");
       debug { Debug.print(testStep # "Assert change propagation: Clean and reuse (most of) graph") };
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#get("f", #ok(+6),
         [#cleanThunk("f", true,
         [#cleanEdgeTo("g", true,
@@ -116,7 +116,7 @@ actor {
     do /* re-demand "k", and re-use cleaning from above (of "g"), though the value changed. */ {
       let res3 = calc.engine.get("k");
       debug { Debug.print(testStep # "Assert change propagation: Reuse clean graph") };
-      assert calc.engine.takeLog() ==
+      assert calc.takeLog() ==
         [#get("k", #ok(+6),
         [#cleanThunk("k", false,
         [#cleanEdgeTo("g", false,

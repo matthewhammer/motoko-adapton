@@ -22,31 +22,30 @@ module {
   (
     evalOps : E.EvalOps<Name, Val, Error, Closure>,
     _logFlag : Bool
-  ) = Self
+  ) = ThisEngine
   {
-    func init(_logFlag:Bool) : G.Context<Name, Val, Error, Closure> {
-      let _evalOps = evalOps;
+    // Private initialization step, during construction.
+    // See also, public init().
+    func init0(_logFlag:Bool) : G.Context<Name, Val, Error, Closure> {
       {
-        var agent = (#editor : {#editor; #archivist}); // determined by by isEmpty(stack)
-
         var edges : G.EdgeBuf<Name, Val, Error, Closure> =
           Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(0);
 
         var stack : G.Stack<Name> = null;
 
         var store : G.Store<Name, Val, Error, Closure> =
-          H.HashMap<Name, G.Node<Name, Val, Error, Closure>>(03, _evalOps.nameEq, _evalOps.nameHash);
+          H.HashMap<Name, G.Node<Name, Val, Error, Closure>>(03, evalOps.nameEq, evalOps.nameHash);
 
-        evalOps = _evalOps;
-        var evalClosure = (null : ?E.EvalClosure<Val, Error, Closure>);
-
+        evalOps;
+        var evalClosure : ?E.EvalClosure<Val, Error, Closure> = null;
         var logOps : Lg.LogOps<Name, Val, Error, Closure>
           = Log.Logger<Name, Val, Error, Closure>(evalOps, _logFlag);
-      }
+      };
     };
 
-    // Call exactly once, before any accesses; See usage instructions in `types/Eval` module.
-    public func setEvalClosure(evalClosure:E.EvalClosure<Val, Error, Closure>) {
+    // Call exactly once, before any uses of engine.
+    // See further information in `types/Eval.mo`.
+    public func init(evalClosure:E.EvalClosure<Val, Error, Closure>) {
       switch (context.evalClosure) {
         case null { context.evalClosure := ?evalClosure };
         case (?_) { assert false };
@@ -73,7 +72,7 @@ module {
       context.logOps.take()
     };
 
-    var context : G.Context<Name, Val, Error, Closure> = init(_logFlag);
+    var context : G.Context<Name, Val, Error, Closure> = init0(_logFlag);
 
 
     func logBegin
@@ -239,18 +238,13 @@ module {
     };
 
     func addEdge(c:G.Context<Name, Val, Error, Closure>, target:Name, action:G.Action<Val, Error, Closure>) {
-      let edge = switch (c.agent) {
-      case (#editor) { /* the editor role is not recorded or memoized */ };
-      case (#archivist) {
-             switch (c.stack) {
-             case null { P.unreachable() };
-             case (?(source, _)) {
-                    let edge = newEdge(source, target, action);
-                    c.edges.add(edge)
-                  };
-             }
+      switch (c.stack) {
+      case null {  };
+      case (?(source, _)) {
+             let edge = newEdge(source, target, action);
+             c.edges.add(edge)
            };
-      };
+      }
     };
 
     func newEdgeBuf() : G.EdgeBuf<Name, Val, Error, Closure> { Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(03) };
@@ -400,12 +394,10 @@ module {
       logBegin(c);
       let oldEdges = c.edges;
       let oldStack = c.stack;
-      let oldAgent = c.agent;
       // if nodeName exists on oldStack, then we have detected a cycle.
       if (stackContainsNodeName(oldStack, nodeName)) {
         return #err(evalOps.cyclicDependency(oldStack, nodeName))
       };
-      c.agent := #archivist;
       c.edges := Buffer.Buffer(0);
       c.stack := ?(nodeName, oldStack);
       remBackEdges(c, thunkNode.outgoing);
@@ -414,7 +406,6 @@ module {
         case (?closureEval) { closureEval.eval(thunkNode.closure) };
       };
       let edges = c.edges.toArray();
-      c.agent := oldAgent;
       c.edges := oldEdges;
       c.stack := oldStack;
       let newNode = {
