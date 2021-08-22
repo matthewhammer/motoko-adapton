@@ -272,7 +272,7 @@ module {
 
     func cleanEdge(e:G.Edge<Name, Val, Error, Closure>) : Bool {
       logBegin();
-      let nowClean = if (not e.dirtyFlag) { true } else {
+      let isConsis = if (not e.dirtyFlag) { true } else {
         switch (e.checkpoint, context.store.get(e.dependency)) {
           case (#get(oldRes), ?#ref(refNode))
             resultEq(oldRes, #ok(refNode.content));
@@ -285,9 +285,9 @@ module {
           case (_, _) loop { assert false };
         }
       };
-      e.dirtyFlag := not nowClean;
-      logEnd(#cleanEdgeTo(e.dependency, nowClean));
-      nowClean;
+      e.dirtyFlag := not isConsis;
+      logEnd(#cleanEdgeTo(e.dependency, isConsis));
+      isConsis;
     };
 
     func cleanThunk(n : Name, t : G.Thunk<Name, Val, Error, Closure>)
