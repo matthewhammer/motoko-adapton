@@ -272,44 +272,22 @@ module {
 
     func cleanEdge(e:G.Edge<Name, Val, Error, Closure>) : Bool {
       logBegin();
-      let successFlag = if (e.dirtyFlag) {
+      let nowClean = if (not e.dirtyFlag) { true } else {
         switch (e.checkpoint, context.store.get(e.dependency)) {
-        case (#get(oldRes), ?#ref(refNode)) {
-               if (resultEq(oldRes, #ok(refNode.content))) {
-                 e.dirtyFlag := false;
-                 true
-               } else { false }
-             };
-        case (#put(oldVal), ?#ref(refNode)) {
-               if (evalOps.valEq(oldVal, refNode.content)) {
-                 e.dirtyFlag := false;
-                 true
-               } else { false }
-             };
-        case (#putThunk(oldClosure), ?#thunk(thunkNode)) {
-               if (evalOps.closureEq(oldClosure, thunkNode.closure)) {
-                 e.dirtyFlag := false;
-                 true
-               } else { false }
-             };
-        case (#get(oldRes), ?#thunk(thunkNode)) {
-               let cleanRes = cleanThunk(e.dependency, thunkNode);
-               if (resultEq(oldRes, cleanRes)) {
-                 e.dirtyFlag := false;
-                 true // equal results ==> clean edge; reuse it edge.
-               } else {
-                 false // changed result ==> could not clean edge; must replace.
-               }
-             };
-        case (_, _) {
-               loop { assert false }
-             };
+          case (#get(oldRes), ?#ref(refNode))
+            resultEq(oldRes, #ok(refNode.content));
+          case (#put(oldVal), ?#ref(refNode))
+            evalOps.valEq(oldVal, refNode.content);
+          case (#putThunk(oldClosure), ?#thunk(thunkNode))
+            evalOps.closureEq(oldClosure, thunkNode.closure);
+          case (#get(oldRes), ?#thunk(thunkNode))
+            resultEq(oldRes, cleanThunk(e.dependency, thunkNode));
+          case (_, _) loop { assert false };
         }
-      } else {
-        true // already clean
       };
-      logEnd(#cleanEdgeTo(e.dependency, successFlag));
-      successFlag;
+      e.dirtyFlag := not nowClean;
+      logEnd(#cleanEdgeTo(e.dependency, nowClean));
+      nowClean;
     };
 
     func cleanThunk(n : Name, t : G.Thunk<Name, Val, Error, Closure>)
