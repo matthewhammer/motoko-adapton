@@ -217,16 +217,6 @@ module {
 
     func newEdgeBuf() : G.EdgeBuf<Name, Val, Error, Closure> { Buffer.Buffer<G.Edge<Name, Val, Error, Closure>>(03) };
 
-    func thunkIsDirty(t:G.Thunk<Name, Val, Error, Closure>) : Bool {
-      assert switch(t.result) { case null false; case _ true };
-      for (i in t.outgoing.keys()) {
-        if (t.outgoing[i].dirtyFlag) {
-          return true
-        };
-      };
-      false
-    };
-
     func dirtyThunk(n : Name, thunkNode : G.Thunk<Name, Val, Error, Closure>) {
       // to do: if the node is on the stack,
       //   then the DCG is overwriting names
