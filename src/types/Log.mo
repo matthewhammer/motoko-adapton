@@ -5,13 +5,19 @@ import R "mo:base/Result";
 
 module {
 
+  /// The logging operations required by the adapton engine
   public type LogOps<Name, Val, Error, Closure> = {
     begin : () -> ();
     end : LogEventTag<Name, Val, Error, Closure> -> ();
     take : () -> [LogEvent<Name, Val, Error, Closure>];
   };
 
-  // Logs are tree-structured.
+  /// Logs are sequences of log events.
+  public type Log<Name, Val, Error, Closure> = [
+    LogEvent<Name, Val, Error, Closure>
+  ];
+
+  /// Log events are tree-structured, and recursive.
   public type LogEvent<Name, Val, Error, Closure> = {
     #put:      (Name, Val, [LogEvent<Name, Val, Error, Closure>]);
     #putThunk: (Name, Closure, [LogEvent<Name, Val, Error, Closure>]);
