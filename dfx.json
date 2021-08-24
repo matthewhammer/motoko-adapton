@@ -2,6 +2,9 @@
   "canisters": {
     "Calc": {
       "main": "examples/calc/Main.mo"
+    },
+    "Sort": {
+      "main": "examples/sort/Main.mo"
     }
   },
   "defaults": {
