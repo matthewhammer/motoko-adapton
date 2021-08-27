@@ -24,6 +24,8 @@ public type TreeMeta = {
 
 // Expresssions serve as "spreadsheet formula" for sequences.
 public type Exp<Val_, Error_> = {
+  // arrays for small test inputs, and little else.
+  #array: [ (Exp<Val_, Error_>, Meta.Meta) ];
   // alloc reduces to #thunk case *before* evaluation
   #alloc: (Name, Exp<Val_, Error_>);
   // thunk case permits fine-grained re-use / re-evaluation
@@ -63,17 +65,20 @@ public type Ops<Exp_, Val_, Error_> = {
   getVal : Val_ -> ?Val<Val_>;
   putExp : Exp<Val_, Error_> -> Exp_;
   getExp : Exp_ -> ?Exp<Val_, Error_>;
+  putVal : Val<Val_> -> Val_;
   putError : Error -> Error_;
-  getError : Error_ -> ?Error;
 };
 
-public class Sequence<Exp_, Val_, Error_>(
+public class Sequence<Val_, Error_, Exp_>(
   engine: Engine.Engine<Name, Val_, Error_, Exp_>,
   ops: Ops<Exp_, Val_, Error_>
 ) {
 
-  public func eval(e : Exp<Val_, Error_>) : R.Result<Val<Val_>, Error> {
-    evalRec(alloc(e))
+  public func eval(e : Exp<Val_, Error_>) : R.Result<Val_, Error_> {
+    switch (evalRec(alloc(e))) {
+      case (#ok(v)) #ok(ops.putVal(v));
+      case (#err(e)) #err(ops.putError(e));
+    }
   };
 
   func alloc(e : Exp<Val_, Error_>) : Exp<Val_, Error_> {
@@ -95,7 +100,7 @@ public class Sequence<Exp_, Val_, Error_>(
     case (#alloc(n, e)) loop { assert false };
     case (#thunk(n))
       switch (engine.get(n)) {
-        case (#err(_) or #ok(#err _)) #err(#engineError); 
+        case (#err(_) or #ok(#err _)) #err(#engineError);
         case (#ok(#ok(res))) switch (ops.getVal(res)) {
           case null { #err(#typeError) };
           case (?v) { #ok(v) };

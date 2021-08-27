@@ -7,7 +7,8 @@ import P "mo:base/Prelude";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
 import Text "mo:base/Text";
-
+import Nat "mo:base/Nat";
+import Nat32 "mo:base/Nat32";
 
 module {
 
@@ -23,7 +24,7 @@ module {
     #cons : (Name, [ Name ]);
     #record : [(Name, Name)];
   };
-  
+
   // Levels define [Cartesian trees](https://en.wikipedia.org/wiki/Cartesian_tree).
   public type Level = Nat;
 
@@ -32,5 +33,16 @@ module {
     name : Name;
     level : Level;
   };
+
+  public module Level {
+    public func ofNat(n : Nat) : Level {
+      Nat32.toNat(Nat32.bitcountLeadingZero(H.hash(n)))
+    }
+  };
+
+  public module Name {
+    public func hash (n : Name) : H.Hash {
+      loop { assert false }
+    };
+  };
 }
-  
