@@ -45,4 +45,16 @@ module {
       loop { assert false }
     };
   };
+
+  public class Counter() {
+    var counter : Nat = 0;
+    public func next () : Meta {
+      let level = Level.ofNat(counter);
+      let name = #nat counter;
+      let meta = {level; name};
+      counter += 1;
+      meta
+    };
+  };
+
 }
