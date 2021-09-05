@@ -27,7 +27,7 @@ public type Error = {
 public type Exp = {
   #unit;
   #num : Nat;
-  #seq : Seq.Exp<Val, Error>;
+  #seq : Seq.Exp<Val>;
 };
 
 public class Sort() {

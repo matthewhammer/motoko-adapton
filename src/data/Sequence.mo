@@ -23,24 +23,23 @@ public type TreeMeta = {
 };
 
 // Expresssions serve as "spreadsheet formula" for sequences.
-public type Exp<Val_, Error_> = {
+public type Exp<Val_> = {
   // arrays for small test inputs, and little else.
-  #array: [ (Exp<Val_, Error_>, Meta.Meta) ];
+  #array: [ (Exp<Val_>, Meta.Meta) ];
   // alloc reduces to #thunk case *before* evaluation
-  #alloc: (Name, Exp<Val_, Error_>);
+  #alloc: (Name, Exp<Val_>);
   // thunk case permits fine-grained re-use / re-evaluation
   #thunk: Name;
   // Sequence literal definition/construction
-  #cons: (Exp<Val_, Error_>, ListMeta, Exp<Val_, Error_>);
+  #cons: (Exp<Val_>, ListMeta, Exp<Val_>);
   #nil;
   #val: Val_;
   // Sequence operations
-  #toTree: Exp<Val_, Error_>;
-  #toList: Exp<Val_, Error_>;
-  #max: Exp<Val_, Error_>;
+  #toTree: Exp<Val_>;
+  #toList: Exp<Val_>;
+  #max: Exp<Val_>;
   //#sort: Exp;
   //#median: Exp;
-  #err: Error_;
 };
 
 public type Val<Val_> = {
@@ -63,8 +62,8 @@ public type Error = {
 public type Ops<Exp_, Val_, Error_> = {
   valMax : (Val_, Val_) -> R.Result<Val_, Error_>;
   getVal : Val_ -> ?Val<Val_>;
-  putExp : Exp<Val_, Error_> -> Exp_;
-  getExp : Exp_ -> ?Exp<Val_, Error_>;
+  putExp : Exp<Val_> -> Exp_;
+  getExp : Exp_ -> ?Exp<Val_>;
   putVal : Val<Val_> -> Val_;
   putError : Error -> Error_;
 };
@@ -74,14 +73,14 @@ public class Sequence<Val_, Error_, Exp_>(
   ops: Ops<Exp_, Val_, Error_>
 ) {
 
-  public func eval(e : Exp<Val_, Error_>) : R.Result<Val_, Error_> {
+  public func eval(e : Exp<Val_>) : R.Result<Val_, Error_> {
     switch (evalRec(alloc(e))) {
       case (#ok(v)) #ok(ops.putVal(v));
       case (#err(e)) #err(ops.putError(e));
     }
   };
 
-  func alloc(e : Exp<Val_, Error_>) : Exp<Val_, Error_> {
+  func alloc(e : Exp<Val_>) : Exp<Val_> {
     switch e {
       case (#thunk(n)) #thunk((n));
       case (#alloc(n, e))
@@ -95,7 +94,7 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  func evalRec(exp : Exp<Val_, Error_>) : R.Result<Val<Val_>, Error> {
+  func evalRec(exp : Exp<Val_>) : R.Result<Val<Val_>, Error> {
     switch exp {
     case (#alloc(n, e)) loop { assert false };
     case (#thunk(n))

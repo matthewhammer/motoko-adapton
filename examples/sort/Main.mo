@@ -9,12 +9,24 @@ actor {
       sort.eval(
         #seq(#toTree(
                #array(
-                 [(#val(#num 4), meta.next()),
-                  (#val(#num 8), meta.next()),
-                  (#val(#num 2), meta.next()),
-                  (#val(#num 7), meta.next()),
-                  (#val(#num 1), meta.next()),
-                  (#val(#num 9), meta.next()),
-                  (#val(#num 6), meta.next())]))));
+                 [
+                   (#val(#num 04), meta.next()),
+                   (#val(#num 16), meta.next()),
+                   (#val(#num 02), meta.next()),
+                   (#val(#num 07), meta.next()),
+                   (#val(#num 11), meta.next()),
+                   (#val(#num 09), meta.next()),
+                   (#val(#num 06), meta.next()),
+
+                   (#val(#num 23), meta.next()),
+                   (#val(#num 08), meta.next()),
+                   (#val(#num 13), meta.next()),
+                   (#val(#num 06), meta.next()),
+                   (#val(#num 14), meta.next()),
+                   (#val(#num 17), meta.next()),
+                   (#val(#num 16), meta.next()),
+                 ]
+               ))
+        ));
   };
 }
