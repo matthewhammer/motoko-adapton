@@ -21,7 +21,7 @@ public type Val = {
 
 public type Error = {
   #typeMismatch;
-  #seq : Seq.Error;
+  #seq : Seq.Error<Val>;
 };
 
 public type Exp = {
@@ -61,10 +61,10 @@ public class Sort() {
       getVal = func(v : Val) : ?Seq.Val<Val> =
         switch v { case (#seq(s)) ?s; case _ null };
       putVal = func(v : Seq.Val<Val>) : Val = #seq(v);
-      putExp = func(e : Seq.Exp<Val, Error>) : Exp = #seq(e);
-      getExp = func(e : Exp) : ?Seq.Exp<Val, Error> =
+      putExp = func(e : Seq.Exp<Val>) : Exp = #seq(e);
+      getExp = func(e : Exp) : ?Seq.Exp<Val> =
         switch e { case (#seq(e)) ?e; case _ null };
-      putError = func(e : Seq.Error) : Error = #seq(e);
+      putError = func(e : Seq.Error<Val>) : Error = #seq(e);
     }
   );
 

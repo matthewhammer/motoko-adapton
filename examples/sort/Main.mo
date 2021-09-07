@@ -7,7 +7,7 @@ actor {
   public query func test() : async () {
     let r =
       sort.eval(
-        #seq(#toTree(
+        #seq(#treeOfStream(#streamOfArray(
                #array(
                  [
                    (#val(#num 04), meta.next()),
@@ -26,7 +26,6 @@ actor {
                    (#val(#num 17), meta.next()),
                    (#val(#num 16), meta.next()),
                  ]
-               ))
-        ));
+               )))));
   };
 }
