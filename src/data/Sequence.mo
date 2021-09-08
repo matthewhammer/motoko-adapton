@@ -37,22 +37,54 @@ public type Exp<Val_> = {
   // Sequence operations
   #streamOfArray: Exp<Val_>;
   #treeOfStream: Exp<Val_>;
+  #treeOfStreamRec: { parentLevel : ?Nat; stream : Stream<Val_>; subTree : Tree<Val_> };
   #maxOfTree: Exp<Val_>;
   //#sort: Exp;
   //#median: Exp;
 };
 
+public type Array<Val_> = [ (Val<Val_>, Meta.Meta) ];
+
+public type ArrayStream<Val_> = {
+  array : Array<Val_>;
+  offset : Nat;
+};
+
+public type Cons<Val_> = (Val<Val_>, Meta, Val<Val_>);
+
+public type Bin<Val_> = (Val<Val_>, TreeMeta, Val<Val_>);
+
 public type Val<Val_> = {
+  // value allocated at a name, stored by an adapton thunk or ref.
+  #at: Name;
   // arrays for small test inputs, and little else.
-  #array: [ (Val<Val_>, Meta.Meta) ];
+  #array: Array<Val_>;
+  // array streams: Special stream where source is a fixed array.
+  #arrayStream: ArrayStream<Val_>;
   // empty list; empty tree.
   #nil;
   // lazy list / stream cell: left value is stream "now"; right is stream "later".
-  #cons: (Val<Val_>, Meta, Val<Val_>);
-  // binary tree: left/right values are sub-trees.
-  #bin: (Val<Val_>, TreeMeta, Val<Val_>);
-  #at: Name;
-  #val: Val_;
+  #cons: Cons<Val_>;
+  // binary tree: binary case.
+  #bin: Bin<Val_>;
+  // binary tree: leaf case.
+  #leaf: Val_;
+};
+
+/// Cartesian trees as balanced representations for sequences.
+public type Tree<Val_> = {
+  #nil;
+  #bin: Bin<Val_>;
+  #leaf: Val_;
+};
+
+public type Stream<Val_> = {
+  // empty list; empty tree.
+  #nil;
+  // lazy list / stream cell: left value is stream "now"; right is stream "later".
+  #cons: Cons<Val_>;
+  // array streams: Special stream where source is a fixed array.
+  #arrayStream: ArrayStream<Val_>;
 };
 
 /// Each sequence representation has a different run-time type,
@@ -87,6 +119,7 @@ public type Ops<Exp_, Val_, Error_> = {
   getExp : Exp_ -> ?Exp<Val_>;
   putVal : Val<Val_> -> Val_;
   putError : Error<Val_> -> Error_;
+  getError : Error_ -> ?Error<Val_>;
 };
 
 public class Sequence<Val_, Error_, Exp_>(
@@ -94,6 +127,7 @@ public class Sequence<Val_, Error_, Exp_>(
   ops: Ops<Exp_, Val_, Error_>
 ) {
 
+  /// Evaluate expression into a result.
   public func eval(e : Exp<Val_>) : R.Result<Val_, Error_> {
     switch (evalRec(alloc(e))) {
       case (#ok(v)) #ok(ops.putVal(v));
@@ -115,35 +149,94 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  public func haveArray(arr : Val<Val_>) : Result<[(Val<Val_>, Meta)], Val_> {
-    switch arr {
+  /// Check canonical array forms.
+  public func haveArray(v : Val<Val_>) : Result<[(Val<Val_>, Meta)], Val_> {
+    switch v {
       case (#array(a)) { #ok(a) };
-      case _ { #err(#doNotHave(#array, arr)) };
+      case _ { #err(#doNotHave(#array, v)) };
     };
   };
 
-  public func streamOfArray(input : Val<Val_>) : EvalResult<Val_> {
-    let array = haveArray(input);
-    loop { assert false };
+  /// Check canonical stream forms.
+  public func haveStream(v : Val<Val_>) : Result<Stream<Val_>, Val_> {
+    switch v {
+      case (#arrayStream(s)) { #ok(#arrayStream(s)) };
+      case (#cons(c)) { #ok(#cons(c)) };
+      case (#nil) { #ok(#nil) };
+      case _ { #err(#doNotHave(#stream, v)) };
+    }
   };
 
-  public func treeOfStream(iter : Val<Val_>) : EvalResult<Val_> {
+  /// Transforms an array into a stream.
+  public func streamOfArray(v : Val<Val_>) : EvalResult<Val_> {
+    switch(haveArray(v)) {
+      case (#ok(array)) { #ok(#arrayStream({array; offset = 0})) };
+      case (#err(err)) { #err(err) };
+    }
+  };
+
+  func call(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
+    let thunk =
+      engine.putThunk(
+        name, ops.putExp(exp)
+      );
+    switch thunk {
+      case (#ok(v)) {
+        switch(engine.get(v)) {
+          case (#err(err)) { #err(#engineError) };
+          case (#ok(v)) {
+            switch(v) {
+              case (#ok(v)) {
+                switch (ops.getVal(v)) {
+                  case null { #err(#engineError) };
+                  case (?v) { #ok(v) };
+                }
+              };
+              case (#err(err)) {
+                switch (ops.getError(err)) {
+                  case null { #err(#engineError) };
+                  case (?e) { #err(e) };
+                }
+              };
+            }
+          };
+        }
+      };
+      case (#err(err)) { #err(#engineError) };
+    }
+  };
+
+  /// Transforms a stream into a tree.
+  public func treeOfStreamRec(parentLevel : ?Nat, s : Stream<Val_>, tree : Tree<Val_>) : EvalResult<Val_> {
+    let t =
+      call(
+        #text("test"),
+        #treeOfStreamRec({ parentLevel; stream = s; subTree = tree })
+      );
     loop { assert false }
+  };
+
+  /// Transforms a stream into a tree.
+  public func treeOfStream(s : Val<Val_>) : EvalResult<Val_> {
+    switch(haveStream(s)) {
+      case (#ok(s)) { treeOfStreamRec(null, s, #nil)  };
+      case (#err(err)) { #err(err) };
+    };
   };
 
   func evalRec(exp : Exp<Val_>) : EvalResult<Val_> {
     switch exp {
     case (#put(n, e)) loop { assert false };
     case (#array(arr)) {
-           let vals = Buffer.Buffer<(Val<Val_>, Meta)>(arr.size());
-           for ((e, meta) in arr.vals()) {
-             switch (evalRec(e)) {
-               case (#ok(v)) { vals.add((v, meta)) };
-               case (#err(e)) { return #err(e) };
-             };
-           };
-           #ok(#array(vals.toArray()))
-         };
+      let vals = Buffer.Buffer<(Val<Val_>, Meta)>(arr.size());
+      for ((e, meta) in arr.vals()) {
+        switch (evalRec(e)) {
+          case (#ok(v)) { vals.add((v, meta)) };
+          case (#err(e)) { return #err(e) };
+        };
+      };
+      #ok(#array(vals.toArray()))
+    };
     case (#at(n))
       switch (engine.get(n)) {
         case (#err(_) or #ok(#err _)) #err(#engineError);
@@ -153,27 +246,21 @@ public class Sequence<Val_, Error_, Exp_>(
         };
       };
     case (#streamOfArray(a)) {
-           switch (evalRec(a)) {
-             case (#err(err)) { #err(err) };
-             case (#ok(array)) { streamOfArray(array) };
-           }
-         };
+      switch (evalRec(a)) {
+        case (#err(err)) { #err(err) };
+        case (#ok(array)) { streamOfArray(array) };
+       }
+    };
+    case (#treeOfStreamRec(args)) {
+      treeOfStreamRec(args.parentLevel, args.stream, args.subTree)
+    };
     case (#treeOfStream(e)) {
-           switch (evalRec(e)) {
-             case (#err(err)) { #err(err) };
-             case (#ok(list)) { treeOfStream(list) };
-           }
-         };
+      switch (evalRec(e)) {
+        case (#err(err)) { #err(err) };
+        case (#ok(list)) { treeOfStream(list) };
+      }
+    };
     case _ { loop { assert false } };
-  // #cons: (Exp<Val_, Error_>, ListMeta, Exp<Val_, Error_>);
-  // #nil;
-  // #val: Val_;
-  // // Sequence operations
-  // #toList: Exp<Val_, Error_>;
-  // #max: Exp<Val_, Error_>;
-  // //#sort: Exp;
-  // //#median: Exp;
-  // #err: Error_;
     }
   };
 

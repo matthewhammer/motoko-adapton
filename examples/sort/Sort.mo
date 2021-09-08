@@ -65,6 +65,8 @@ public class Sort() {
       getExp = func(e : Exp) : ?Seq.Exp<Val> =
         switch e { case (#seq(e)) ?e; case _ null };
       putError = func(e : Seq.Error<Val>) : Error = #seq(e);
+      getError = func(e : Error) : ?Seq.Error<Val> =
+        switch e { case (#seq(e)) ?e; case _ null };
     }
   );
 
