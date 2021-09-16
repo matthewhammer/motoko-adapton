@@ -83,6 +83,8 @@ public type Tree<Val_> = {
   #nil;
   #bin: Bin<Val_>;
   #leaf: Val_;
+  // value allocated at a name, stored by an adapton thunk or ref.
+  #at: Name;
 };
 
 public type Stream<Val_> = {
@@ -145,14 +147,27 @@ public class Sequence<Val_, Error_, Exp_>(
 
   func alloc(e : Exp<Val_>) : Exp<Val_> {
     switch e {
+      case (#array(a)) {
+        let elms = Buffer.Buffer<(Exp<Val_>, Meta)>(a.size());
+        for ((e, meta) in a.vals()) {
+          elms.add((alloc e, meta))
+        };
+        #array(elms.toArray())
+      };
       case (#at(n)) #at((n));
-      case (#put(n, e))
+      case (#put(n, e)) {
         switch (engine.putThunk(n, ops.putExp(alloc(e)))) {
         case (#err(err)) { loop { assert false } };
         case (#ok(n)) { #at(n) };
-      };
-      case _ { // to do -- recursive cases
-             loop { assert false }
+        }};
+      case (#val(v)) #val(v);
+      case (#streamOfArray(e)) #streamOfArray(alloc e);
+      case (#treeOfStream(e)) #treeOfStream(alloc e);
+      case (#treeOfStreamRec(e)) { assert false; loop {}};
+      case (#maxOfTree(e)) #maxOfTree(alloc e);
+      case (#nil) #nil;
+      case (#cons(c)) {
+             #cons({head=alloc(c.head); meta=alloc(c.meta); tail=alloc(c.tail)})
            };
     }
   };
@@ -165,7 +180,7 @@ public class Sequence<Val_, Error_, Exp_>(
     };
   };
 
-  /// Check canonical stream forms.
+  /// Check canonical stream head form.
   public func haveStream(v : Val<Val_>) : Result<Stream<Val_>, Val_> {
     switch v {
       case (#arrayStream(s)) { #ok(#arrayStream(s)) };
@@ -175,10 +190,13 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  /// Check canonical stream forms.
+  /// Check canonical tree head form.
   public func haveTree(v : Val<Val_>) : Result<Tree<Val_>, Val_> {
     switch v {
-      // to do
+      case (#at n) { #ok(#at(n)) };
+      case (#nil) { #ok(#nil) };
+      case (#bin(b)) { #ok(#bin(b)) };
+      case (#leaf v) { #ok(#leaf(v)) };
       case _ { #err(#doNotHave(#tree, v)) };
     }
   };
@@ -191,21 +209,22 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  func memoCall(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
+  // Returns the thunk, and its (eagerly-computed) value, as a pair.
+  func getPutThunk(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
     let thunk =
       engine.putThunk(
         name, ops.putExp(exp)
       );
     switch thunk {
-      case (#ok(v)) {
-        switch(engine.get(v)) {
+      case (#ok(putName)) {
+        switch(engine.get(putName)) {
           case (#err(err)) { #err(#engineError) };
           case (#ok(v)) {
             switch(v) {
               case (#ok(v)) {
                 switch (ops.getVal(v)) {
                   case null { #err(#engineError) };
-                  case (?v) { #ok(v) };
+                  case (?gotValue) { resultPair(#at(putName), gotValue) };
                 }
               };
               case (#err(err)) {
@@ -222,9 +241,28 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
+  // Does getPutThunk, but only returns the result of the thunk.
+  func memo(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
+    switch (getPutThunk(name, exp)) {
+      case (#err(e)) #err(e);
+      case (#ok(#pair((_, v)))) #ok(v);
+      case (#ok(_)) { assert false; loop {}};
+    }
+  };
+
+  // Does getPutThunk, but returns the thunk and value as a Motoko pair.
+  func memo_(name : Name, exp : Exp<Val_>) : Result<(Name, Val<Val_>), Val_> {
+    switch (getPutThunk(name, exp)) {
+      case (#err(e)) #err(e);
+      case (#ok(#pair(#at(n), v))) #ok((n, v));
+      case (#ok(_)) { assert false; loop {}};
+    }
+  };
+
   /// number of elms; ignore internal nodes
   public func treeSize (t : Tree<Val_>) : Nat {
     switch t {
+      case (#at(n)) { assert false; loop {}}; // query engine here?
       case (#nil) 0;
       case (#bin(b)) b.meta.size;
       case (#leaf _) 1;
@@ -233,6 +271,7 @@ public class Sequence<Val_, Error_, Exp_>(
 
   public func treeLevel (t : Tree<Val_>) : Nat {
     switch t {
+      case (#at(n)) { assert false; loop {}}; // to do -- query engine here?
       case (#nil) 0;
       case (#bin(b)) b.meta.level;
       case (#leaf _) 0;
@@ -288,7 +327,7 @@ public class Sequence<Val_, Error_, Exp_>(
           case (#err(e)) { return #err(e) }
         };
         let (tree2, s2) =
-          switch (resultPairSplit(memoCall(
+          switch (resultPairSplit(memo(
                       #bin(meta.name, #text("right")),
                       #treeOfStreamRec({
                                          parentLevel = ?meta.level;
@@ -307,7 +346,7 @@ public class Sequence<Val_, Error_, Exp_>(
         let tree3 = #bin({ left = tree;
                            meta = { level = meta.level; name = meta.name; size};
                            right = tree2_ });
-        memoCall(
+        memo(
           #bin(meta.name, #text("root")),
           #treeOfStreamRec({
                              parentLevel;
