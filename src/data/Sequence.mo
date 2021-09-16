@@ -328,7 +328,7 @@ public class Sequence<Val_, Error_, Exp_>(
         if (meta.level < treeLevel(tree)) {
           return resultPair(tree, s)
         };
-        let tailAsStream = switch (haveStream(s)) {
+        let tailAsStream = switch (haveStream(tail)) {
           case (#ok(s)) s;
           case (#err(e)) { return #err(e) }
         };
