@@ -23,6 +23,7 @@ public type TreeMeta = {
 };
 
 // Expresssions serve as "spreadsheet formula" for sequences.
+// Read "Val_" as "Any", but for our DSL system, not for Motoko.
 public type Exp<Val_> = {
   // arrays for small test inputs, and little else.
   #array: [ (Exp<Val_>, Meta.Meta) ];
@@ -71,8 +72,10 @@ public type Val<Val_> = {
   #cons: Cons<Val_>;
   // binary tree: binary case.
   #bin: Bin<Val_>;
-  // binary tree: leaf case.
+  // binary tree: leaf case. *Any* value, from any language module.
   #leaf: Val_;
+  // pair of our values.
+  #pair: (Val<Val_>, Val<Val_>);
 };
 
 /// Cartesian trees as balanced representations for sequences.
@@ -97,6 +100,7 @@ public type SeqType = {
   #array;
   #stream;
   #tree;
+  #pair;
 };
 
 /// Result type for all "meta level" operations returning an `X`.
@@ -220,31 +224,45 @@ public class Sequence<Val_, Error_, Exp_>(
 
   /// number of elms; ignore internal nodes
   public func treeSize (t : Tree<Val_>) : Nat {
-    assert false; loop {}
+    switch t {
+      case (#nil) 0;
+      case (#bin(b)) b.meta.size;
+      case (#leaf _) 1;
+    }
   };
 
   public func treeLevel (t : Tree<Val_>) : Nat {
-    assert false; loop {}
+    switch t {
+      case (#nil) 0;
+      case (#bin(b)) b.meta.level;
+      case (#leaf _) 0;
+    }
   };
 
   public func streamNext (s : Stream<Val_>) : ?Cons<Val_> {
-    assert false; loop {}
-  };
-
-  public func streamMeta (s : Stream<Val_>) : EvalResult<Meta> {
-    assert false; loop {}
-  };
-
-  public func streamTail (s : Stream<Val_>) : EvalResult<Val_> {
-    assert false; loop {}
+    switch s {
+      case (#nil) null;
+      case (#arrayStream(a)) {
+        if(a.offset < a.array.size()) {
+          let (elm, meta) = a.array[a.offset];
+          ?(elm, meta, #arrayStream{ offset = a.offset + 1;
+                                     array = a.array })
+        } else null;
+      };
+      case (#cons(c)) { ?c }
+    }
   };
 
   public func resultPairSplit(r : EvalResult<Val_>) : Result<(Val<Val_>, Val<Val_>), Val_> {
-    assert false; loop {}
+    switch r {
+      case (#ok(#pair(v1, v2))) { #ok((v1, v2)) };
+      case (#ok(v)) { #err(#doNotHave(#pair, v)) };
+      case (#err(e)) { #err(e) };
+    }
   };
 
   public func resultPair(v1 : Val<Val_>, v2 : Val<Val_>) : EvalResult<Val_> {
-    assert false; loop {}
+    #ok(#pair(v1, v2))
   };
 
   /// Transforms a stream into a tree.
