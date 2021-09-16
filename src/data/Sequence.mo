@@ -31,7 +31,7 @@ public type Exp<Val_> = {
   // `#at` case permits fine-grained re-use / re-evaluation via Adapton names.
   #at: Name;
   // Stream-literal definition/construction
-  #cons: (Exp<Val_>, Meta, Exp<Val_>);
+  #cons: { head: Exp<Val_>; meta: Exp<Val_>; tail: Exp<Val_> };
   #nil;
   #val: Val_;
   // Sequence operations
@@ -52,7 +52,11 @@ public type ArrayStream<Val_> = {
 
 public type Cons<Val_> = (Val<Val_>, Meta, Val<Val_>);
 
-public type Bin<Val_> = (Val<Val_>, TreeMeta, Val<Val_>);
+public type Bin<Val_> = {
+  left : Val<Val_>;
+  meta : TreeMeta;
+  right : Val<Val_>;
+};
 
 public type Val<Val_> = {
   // value allocated at a name, stored by an adapton thunk or ref.
@@ -167,6 +171,14 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
+  /// Check canonical stream forms.
+  public func haveTree(v : Val<Val_>) : Result<Tree<Val_>, Val_> {
+    switch v {
+      // to do
+      case _ { #err(#doNotHave(#tree, v)) };
+    }
+  };
+
   /// Transforms an array into a stream.
   public func streamOfArray(v : Val<Val_>) : EvalResult<Val_> {
     switch(haveArray(v)) {
@@ -175,7 +187,7 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  func call(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
+  func memoCall(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
     let thunk =
       engine.putThunk(
         name, ops.putExp(exp)
@@ -206,22 +218,95 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
+  /// number of elms; ignore internal nodes
+  public func treeSize (t : Tree<Val_>) : Nat {
+    assert false; loop {}
+  };
+
+  public func treeLevel (t : Tree<Val_>) : Nat {
+    assert false; loop {}
+  };
+
+  public func streamNext (s : Stream<Val_>) : ?Cons<Val_> {
+    assert false; loop {}
+  };
+
+  public func streamMeta (s : Stream<Val_>) : EvalResult<Meta> {
+    assert false; loop {}
+  };
+
+  public func streamTail (s : Stream<Val_>) : EvalResult<Val_> {
+    assert false; loop {}
+  };
+
+  public func resultPairSplit(r : EvalResult<Val_>) : Result<(Val<Val_>, Val<Val_>), Val_> {
+    assert false; loop {}
+  };
+
+  public func resultPair(v1 : Val<Val_>, v2 : Val<Val_>) : EvalResult<Val_> {
+    assert false; loop {}
+  };
+
   /// Transforms a stream into a tree.
-  public func treeOfStreamRec(parentLevel : ?Nat, s : Stream<Val_>, tree : Tree<Val_>) : EvalResult<Val_> {
-    let t =
-      call(
-        #text("test"),
-        #treeOfStreamRec({ parentLevel; stream = s; subTree = tree })
-      );
-    loop { assert false }
+  public func treeOfStreamRec(parentLevel : ?Nat, s : Stream<Val_>, tree : Tree<Val_>)
+    : EvalResult<Val_> // (Tree, Stream), for the result and remaining stream.
+  {
+    switch (streamNext(s)) {
+      case null (resultPair(tree, #nil));
+      case (?cons) {
+        let (head, meta, tail) = cons;
+        switch parentLevel {
+          case (?pl) {
+            if (meta.level > pl) {
+              return resultPair(tree, s)
+            } };
+          case _ { };
+        };
+        if (meta.level < treeLevel(tree)) {
+          return resultPair(tree, s)
+        };
+        let tailAsStream = switch (haveStream(s)) {
+          case (#ok(s)) s;
+          case (#err(e)) { return #err(e) }
+        };
+        let (tree2, s2) =
+          switch (resultPairSplit(memoCall(
+                      #bin(meta.name, #text("right")),
+                      #treeOfStreamRec({
+                                         parentLevel = ?meta.level;
+                                         stream = tailAsStream;
+                                         subTree = #leaf(ops.putVal(head));
+                                       })))) {
+          case (#err(e)) { return #err(e) };
+          case (#ok(v1, v2)) (v1, v2);
+        };
+        let (tree2_, s2_) = switch (haveTree(tree2), haveStream(s2)) {
+        case (#ok(t), #ok(s)) (t, s);
+        case (#err(e1), _) { return #err(e1) };
+        case (_, #err(e2)) { return #err(e2) };
+        };
+        let size = treeSize(tree) + treeSize(tree2_);
+        let tree3 = #bin({ left = tree;
+                           meta = { level = meta.level; name = meta.name; size};
+                           right = tree2_ });
+        memoCall(
+          #bin(meta.name, #text("root")),
+          #treeOfStreamRec({
+                             parentLevel;
+                             stream = s2_;
+                             subTree = tree3;
+                           }));
+           }
+    }
   };
 
   /// Transforms a stream into a tree.
   public func treeOfStream(s : Val<Val_>) : EvalResult<Val_> {
+    engine.nest(#text("treeOfStream"), func () : EvalResult<Val_> {
     switch(haveStream(s)) {
       case (#ok(s)) { treeOfStreamRec(null, s, #nil)  };
       case (#err(err)) { #err(err) };
-    };
+    }});
   };
 
   func evalRec(exp : Exp<Val_>) : EvalResult<Val_> {
