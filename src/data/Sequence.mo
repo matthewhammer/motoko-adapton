@@ -353,7 +353,7 @@ public class Sequence<Val_, Error_, Exp_>(
                            meta = { level = meta.level; name = meta.name; size};
                            right = tree2_ });
         memo(
-          #bin(meta.name, #text("root")),
+          #bin(meta.name, #text("above")),
           #treeOfStreamRec({
                              parentLevel;
                              stream = s2_;
