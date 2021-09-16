@@ -4,6 +4,7 @@ import Meta "../../src/data/Meta";
 import R "mo:base/Result";
 import L "mo:base/List";
 import Text "mo:base/Text";
+import Debug "mo:base/Debug";
 
 /**
  Incremental sorting example.
@@ -41,6 +42,7 @@ public class Sort() {
         errorEq=func (x:Error, y:Error) : Bool { x == y };
         nameHash=Meta.Name.hash;
         cyclicDependency=func (stack:L.List<Name>, name:Name) : Error {
+          Debug.print(debug_show {stack; name});
           assert false; loop { }
         }
       },
@@ -84,6 +86,12 @@ public class Sort() {
       engineIsInit := true
     };
     evalRec(exp)
+  };
+
+  public func takeLog() : Engine.Log<Name, Val, Error, Exp> {
+    let log = engine.takeLog();
+    debug { Debug.print (debug_show log) };
+    log
   };
 
 };

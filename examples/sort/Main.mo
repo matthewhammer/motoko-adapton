@@ -27,5 +27,8 @@ actor {
                    (#val(#num 16), meta.next()),
                  ]
                )))));
+
+    ignore sort.takeLog();
+
   };
 }
