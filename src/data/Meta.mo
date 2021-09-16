@@ -42,7 +42,11 @@ module {
 
   public module Name {
     public func hash (n : Name) : H.Hash {
-      loop { assert false }
+      switch n {
+        case (#none) Text.hash "none";
+        case (#text(t)) Text.hash t;
+        case _ Text.hash "?"; // to do
+      }
     };
   };
 

@@ -38,10 +38,16 @@ public type Exp<Val_> = {
   // Sequence operations
   #streamOfArray: Exp<Val_>;
   #treeOfStream: Exp<Val_>;
-  #treeOfStreamRec: { parentLevel : ?Nat; stream : Stream<Val_>; subTree : Tree<Val_> };
+  #treeOfStreamRec: TreeOfStreamRec<Val_>;
   #maxOfTree: Exp<Val_>;
   //#sort: Exp;
   //#median: Exp;
+};
+
+public type TreeOfStreamRec<Val_> = {
+  parentLevel : ?Nat;
+  stream : Stream<Val_>;
+  subTree : Tree<Val_>
 };
 
 public type Array<Val_> = [ (Val<Val_>, Meta.Meta) ];
@@ -163,12 +169,12 @@ public class Sequence<Val_, Error_, Exp_>(
       case (#val(v)) #val(v);
       case (#streamOfArray(e)) #streamOfArray(alloc e);
       case (#treeOfStream(e)) #treeOfStream(alloc e);
-      case (#treeOfStreamRec(e)) { assert false; loop {}};
       case (#maxOfTree(e)) #maxOfTree(alloc e);
       case (#nil) #nil;
       case (#cons(c)) {
              #cons({head=alloc(c.head); meta=alloc(c.meta); tail=alloc(c.tail)})
            };
+      case (#treeOfStreamRec(args)) { #treeOfStreamRec(args) };
     }
   };
 
@@ -368,6 +374,7 @@ public class Sequence<Val_, Error_, Exp_>(
 
   func evalRec(exp : Exp<Val_>) : EvalResult<Val_> {
     switch exp {
+    case (#val(v)) { #ok(#leaf(v)) };
     case (#put(n, e)) loop { assert false };
     case (#array(arr)) {
       let vals = Buffer.Buffer<(Val<Val_>, Meta)>(arr.size());
@@ -402,7 +409,6 @@ public class Sequence<Val_, Error_, Exp_>(
         case (#ok(list)) { treeOfStream(list) };
       }
     };
-    case _ { loop { assert false } };
     }
   };
 
