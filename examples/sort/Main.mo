@@ -28,7 +28,7 @@ actor {
                  ]
                )))));
 
-    let _ = sort.takeLog();
+    sort.printLog()
 
   };
 }
