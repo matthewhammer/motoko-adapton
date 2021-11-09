@@ -51,7 +51,7 @@ module {
   };
 
   public class Counter() {
-    var counter : Nat = 0;
+    var counter : Nat = 1;
     public func next () : Meta {
       let level = Level.ofNat(counter);
       let name = #nat counter;

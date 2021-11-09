@@ -36,7 +36,7 @@ public type Exp<Val_> = {
   #nil;
   #val: Val_;
   // Sequence operations
-  #streamOfArray: Exp<Val_>;
+  #streamOfArray: (Name, Exp<Val_>);
   #treeOfStream: Exp<Val_>;
   #treeOfStreamRec: TreeOfStreamRec<Val_>;
   #maxOfTree: Exp<Val_>;
@@ -53,6 +53,7 @@ public type TreeOfStreamRec<Val_> = {
 public type Array<Val_> = [ (Val<Val_>, Meta.Meta) ];
 
 public type ArrayStream<Val_> = {
+  name : Name;
   array : Array<Val_>;
   offset : Nat;
 };
@@ -100,6 +101,8 @@ public type Stream<Val_> = {
   #cons: Cons<Val_>;
   // array streams: Special stream where source is a fixed array.
   #arrayStream: ArrayStream<Val_>;
+  // value allocated at a name, stored by an adapton thunk or ref.
+  #at: Name;
 };
 
 /// Each sequence representation has a different run-time type,
@@ -124,6 +127,8 @@ public type Error<Val_> = {
   #doNotHave : (SeqType, Val<Val_>);
   // no max/min/median defined when sequence is empty
   #emptySequence;
+  // index is out of bounds for sequence
+  #outOfBounds;
   // to do -- improve with separate PR
   #engineError;
 };
@@ -167,7 +172,7 @@ public class Sequence<Val_, Error_, Exp_>(
         case (#ok(n)) { #at(n) };
         }};
       case (#val(v)) #val(v);
-      case (#streamOfArray(e)) #streamOfArray(alloc e);
+      case (#streamOfArray(n, e)) #streamOfArray(n, alloc e);
       case (#treeOfStream(e)) #treeOfStream(alloc e);
       case (#maxOfTree(e)) #maxOfTree(alloc e);
       case (#nil) #nil;
@@ -189,6 +194,7 @@ public class Sequence<Val_, Error_, Exp_>(
   /// Check canonical stream head form.
   public func haveStream(v : Val<Val_>) : Result<Stream<Val_>, Val_> {
     switch v {
+      case (#at n) { #ok(#at(n)) }; // to do -- cached type-check on that name
       case (#arrayStream(s)) { #ok(#arrayStream(s)) };
       case (#cons(c)) { #ok(#cons(c)) };
       case (#nil) { #ok(#nil) };
@@ -199,7 +205,7 @@ public class Sequence<Val_, Error_, Exp_>(
   /// Check canonical tree head form.
   public func haveTree(v : Val<Val_>) : Result<Tree<Val_>, Val_> {
     switch v {
-      case (#at n) { #ok(#at(n)) };
+      case (#at n) { #ok(#at(n)) }; // to do -- cached type-check on that name
       case (#nil) { #ok(#nil) };
       case (#bin(b)) { #ok(#bin(b)) };
       case (#leaf v) { #ok(#leaf(v)) };
@@ -208,9 +214,9 @@ public class Sequence<Val_, Error_, Exp_>(
   };
 
   /// Transforms an array into a stream.
-  public func streamOfArray(v : Val<Val_>) : EvalResult<Val_> {
+  public func streamOfArray(name : Name, v : Val<Val_>) : EvalResult<Val_> {
     switch(haveArray(v)) {
-      case (#ok(array)) { #ok(#arrayStream({array; offset = 0})) };
+      case (#ok(array)) { #ok(#arrayStream({name; array; offset = 0})) };
       case (#err(err)) { #err(err) };
     }
   };
@@ -229,7 +235,7 @@ public class Sequence<Val_, Error_, Exp_>(
             switch(v) {
               case (#ok(v)) {
                 switch (ops.getVal(v)) {
-                  case null { #err(#engineError) };
+                  case null { #err(#notOurVal(v)) };
                   case (?gotValue) { resultPair(#at(putName), gotValue) };
                 }
               };
@@ -247,7 +253,7 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  // Does getPutThunk, but only returns the result of the thunk.
+  // Does getPutThunk, and only returns the result of the thunk.
   func memo(name : Name, exp : Exp<Val_>) : EvalResult<Val_> {
     switch (getPutThunk(name, exp)) {
       case (#err(e)) #err(e);
@@ -256,8 +262,17 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
-  // Does getPutThunk, but returns the thunk and value as a Motoko pair.
-  func memo_(name : Name, exp : Exp<Val_>) : Result<(Name, Val<Val_>), Val_> {
+  // Does getPutThunk, and returns the name as a value.
+  func memo_(name : Name, exp : Exp<Val_>) : Result<Val<Val_>, Val_> {
+    switch (getPutThunk(name, exp)) {
+      case (#err(e)) #err(e);
+      case (#ok(#pair(#at(n), v))) #ok(#at(n));
+      case (#ok(_)) { assert false; loop {}};
+    }
+  };
+
+  // Does getPutThunk, and returns the thunk and value as a Motoko pair.
+  func memo__(name : Name, exp : Exp<Val_>) : Result<(Name, Val<Val_>), Val_> {
     switch (getPutThunk(name, exp)) {
       case (#err(e)) #err(e);
       case (#ok(#pair(#at(n), v))) #ok((n, v));
@@ -265,36 +280,114 @@ public class Sequence<Val_, Error_, Exp_>(
     }
   };
 
+  // Get tree from engine, based on its name.
+  public func getTree (n : Name) : Result<Tree<Val_>, Val_> {
+    switch (engine.get(n)) {
+      case (#ok(#ok(v))) {
+        switch (ops.getVal(v)) {
+          case null { #err(#notOurVal(v)) };
+          case (?t) {
+            switch (haveTree(t)) {
+              case (#ok(t)) #ok(t);
+              case (#err(e)) #err(e);
+            }};
+        }};
+      case _ #err(#engineError);
+    }
+  };
+
   /// number of elms; ignore internal nodes
-  public func treeSize (t : Tree<Val_>) : Nat {
+  public func treeSize (t : Tree<Val_>) : Result<Nat, Val_> {
     switch t {
-      case (#at(n)) { assert false; loop {}}; // query engine here?
+      case (#at(n)) {
+        switch (getTree(n)) {
+          case (#err(e)) #err(e);
+          case (#ok(t)) treeSize(t)
+        }
+      };
       case (#nil) 0;
       case (#bin(b)) b.meta.size;
       case (#leaf _) 1;
     }
   };
 
-  public func treeLevel (t : Tree<Val_>) : Nat {
+  public func treeGet(tree : Tree<Val_>, offset : Nat) : EvalResult<Val_> {
+    switch tree {
+      case (#at(n)) {
+        switch (getTree(n)) {
+          case (#err(e)) #err(e);
+          case (#ok(t)) treeGet(t, offset)
+        }
+      };
+      case (#nil) #err(#outOfBounds);
+      case (#bin(b)) {
+        switch (treeSize(b.left)) {
+          case (#err(e)) #err(e);
+          case (#ok(lSize)) {
+            if (offset < lSize) {
+              treeGet(b.left, offset)
+            } else {
+              treeGet(b.right, offset - lSize)
+            };
+          }
+        }};
+      case (#leaf v) {
+        if (offset != 0) {
+          #err(#outOfBounds)
+        } else {
+          #ok(v)
+        }
+      };
+    }
+  };
+
+  public func treeLevel (t : Tree<Val_>) : Result<Nat, Val_> {
     switch t {
-      case (#at(n)) { assert false; loop {}}; // to do -- query engine here?
+      case (#at(n)) {
+        switch (getTree(n)) {
+          case (#err(e)) #err(e);
+          case (#ok(t)) treeLevel(t)
+        }
+      };
       case (#nil) 0;
       case (#bin(b)) b.meta.level;
       case (#leaf _) 0;
     }
   };
 
-  public func streamNext (s : Stream<Val_>) : ?Cons<Val_> {
+  public func streamNext (s : Stream<Val_>) : Result<?Cons<Val_>, Val_> {
     switch s {
-      case (#nil) null;
+      case (#nil) #ok(null);
+      case (#at(n)) {
+        switch (engine.get(n)) {
+          case (#ok(#ok(v))) {
+            switch (ops.getVal(v)) {
+              case (?v) {
+                switch (haveStream(v)) {
+                  case (#ok(s)) { streamNext(s) };
+                  case (#err(e)) { return #err(e) };
+                }};
+              case null { return #err(#notOurVal(v)) };
+            }
+          };
+          case (#ok(#err(e))) { #err(#engineError) };
+          case (#err(e)) { #err(#engineError) };
+        }
+      };
       case (#arrayStream(a)) {
         if(a.offset < a.array.size()) {
           let (elm, meta) = a.array[a.offset];
-          ?(elm, meta, #arrayStream{ offset = a.offset + 1;
-                                     array = a.array })
-        } else null;
+          let tail_ = #arrayStream{ name = a.name;
+                                    offset = a.offset + 1;
+                                    array = a.array };
+          let tail = switch (engine.put(#bin(a.name, #nat(a.offset)), ops.putVal(tail_))) {
+            case (#ok(n)) (#at(n));
+            case (#err(e)) { return #err(#engineError) };
+          };
+          #ok(?(elm, meta, tail_))
+        } else #ok(null);
       };
-      case (#cons(c)) { ?c }
+      case (#cons(c)) { #ok(?c) }
     }
   };
 
@@ -315,8 +408,9 @@ public class Sequence<Val_, Error_, Exp_>(
     : EvalResult<Val_> // (Tree, Stream), for the result and remaining stream.
   {
     switch (streamNext(s)) {
-      case null (resultPair(tree, #nil));
-      case (?cons) {
+      case (#err(e)) { return #err(e) };
+      case (#ok(null)) (resultPair(tree, #nil));
+      case (#ok(?cons)) {
         let (head, meta, tail) = cons;
         switch parentLevel {
           case (?pl) {
@@ -334,7 +428,7 @@ public class Sequence<Val_, Error_, Exp_>(
         };
         let (tree2, s2) =
           switch (resultPairSplit(memo(
-                      #bin(meta.name, #text("right")),
+                      #bin(meta.name, #text("rec1")),
                       #treeOfStreamRec({
                                          parentLevel = ?meta.level;
                                          stream = tailAsStream;
@@ -348,12 +442,20 @@ public class Sequence<Val_, Error_, Exp_>(
         case (#err(e1), _) { return #err(e1) };
         case (_, #err(e2)) { return #err(e2) };
         };
+        let (left, right) = switch (
+          engine.put(#bin(meta.name, #text("left")), ops.putVal(tree2_)),
+          engine.put(#bin(meta.name, #text("right")), ops.putVal(tree2_))) 
+        {
+        case (#ok(l), #ok(r)) (#at(l), #at(r));
+        case (#err(e), _) { return #err(#engineError) };
+        case (_, #err(e)) { return #err(#engineError) };
+        };
         let size = treeSize(tree) + treeSize(tree2_);
-        let tree3 = #bin({ left = tree;
+        let tree3 = #bin({ left;
                            meta = { level = meta.level; name = meta.name; size};
-                           right = tree2_ });
+                           right });
         memo(
-          #bin(meta.name, #text("above")),
+          #bin(meta.name, #text("rec2")),
           #treeOfStreamRec({
                              parentLevel;
                              stream = s2_;
@@ -394,10 +496,10 @@ public class Sequence<Val_, Error_, Exp_>(
           case (?v) { #ok(v) };
         };
       };
-    case (#streamOfArray(a)) {
+    case (#streamOfArray(n, a)) {
       switch (evalRec(a)) {
         case (#err(err)) { #err(err) };
-        case (#ok(array)) { streamOfArray(array) };
+        case (#ok(array)) { streamOfArray(n, array) };
        }
     };
     case (#treeOfStreamRec(args)) {
