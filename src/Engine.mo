@@ -62,6 +62,12 @@ module {
       context.logOps.end(tag)
     };
 
+    public func nest<X>(name : Name, body : () -> X) : X {
+      // to do -- enter nested namespace using name
+      body()
+      // to do -- resume original namespace
+    };
+
     public func put(name:Name, val:Val) : R.Result<Name, G.PutError> {
       logBegin();
       let newRefNode : G.Ref<Name, Val, Error, Closure> = {
